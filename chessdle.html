@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chessdle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #d4af37; --gold2: #f5e27a;
+    --dark: #0d0d0d; --panel: rgba(20,18,10,0.9);
+    --border: rgba(212,175,55,0.2);
+    --green: #22c55e; --red: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #1a1500 0%, #0d0d0d 70%);
+    min-height: 100vh; color: #fff;
+    background-attachment: fixed;
+  }
+  body.pancake-bg {
+    background-image: url('assets/pancakesbg.jpg') !important;
+    background-size: cover !important; background-position: center !important;
+    background-attachment: fixed !important;
+  }
+
+  /* Chessboard pattern background accent */
+  .chess-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    opacity: 0.03;
+    background-image:
+      repeating-conic-gradient(#fff 0% 25%, transparent 0% 50%);
+    background-size: 60px 60px;
+  }
+
+  .content { position: relative; z-index: 1; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 30px;
+    background: rgba(13,13,13,0.9);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+  .nav-home { font-family:'Cinzel Decorative',serif; color:rgba(255,255,255,0.4); text-decoration:none; font-size:0.8rem; letter-spacing:0.1em; transition:color 0.2s; }
+  .nav-home:hover { color: var(--gold); }
+  .nav-title { font-family:'Cinzel Decorative',serif; font-size:1.6rem; background:linear-gradient(135deg,#d4af37,#f5e27a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .nav-pancake { background:none; border:1px solid rgba(255,165,0,0.3); border-radius:20px; padding:6px 14px; color:var(--gold); font-family:'Nunito',sans-serif; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all 0.2s; }
+  .nav-pancake img { width:20px;height:20px;border-radius:50%; }
+  .nav-pancake:hover { background:rgba(255,165,0,0.1); }
+
+  main { max-width: 900px; margin: 0 auto; padding: 30px 20px 60px; }
+
+  .subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+  }
+
+  .guess-counter {
+    display: inline-block; margin: 0 auto 20px;
+    font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.1); padding: 6px 20px; border-radius: 20px;
+    background: rgba(255,255,255,0.04);
+    transition: all 0.3s;
+  }
+  .guess-counter.bump { animation: bump 0.3s ease; }
+  @keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  .header-center { text-align: center; }
+
+  /* Piece picker grid */
+  .piece-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin: 0 auto 30px;
+    max-width: 600px;
+  }
+  .piece-btn {
+    background: rgba(212,175,55,0.06);
+    border: 1.5px solid rgba(212,175,55,0.15);
+    border-radius: 14px;
+    padding: 16px 8px 10px;
+    cursor: pointer; color: #fff; font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 0.8rem;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .piece-btn:hover { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.4); transform: translateY(-3px); }
+  .piece-btn.used { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+  .piece-btn .piece-symbol { font-size: 2.2rem; line-height: 1; }
+  .piece-btn .piece-name { font-size: 0.72rem; color: rgba(255,255,255,0.6); }
+
+  /* Column headers */
+  #col-headers {
+    display: none;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 8px; max-width: 100%; margin: 0 auto 6px; padding: 0 4px;
+  }
+  #col-headers .ch {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.3);
+    text-align: center;
+  }
+
+  #feedback { display: flex; flex-direction: column; gap: 10px; }
+
+  .piece-result {
+    display: grid;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 8px; padding: 12px;
+    border-radius: 14px;
+    background: rgba(20,18,10,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    align-items: center;
+    animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-30px) scale(0.95)} to{opacity:1;transform:none} }
+
+  .piece-icon-cell { text-align: center; font-size: 3rem; line-height: 1; }
+
+  .hint {
+    font-weight: 700; text-align: center; border-radius: 10px;
+    padding: 8px 4px; font-size: 0.78rem;
+    min-height: 64px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 4px;
+    transition: transform 0.2s;
+  }
+  .hint:hover { transform: scale(1.04); }
+  .hint .heading { font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;font-weight:800; }
+  .hint .val { font-size:0.85rem; }
+  .green { background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 2px 12px rgba(34,197,94,0.3); }
+  .red { background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;box-shadow:0 2px 12px rgba(239,68,68,0.3); }
+
+  .celebration {
+    background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(245,226,122,0.08));
+    border:1px solid rgba(212,175,55,0.3);
+    border-radius:20px; padding:30px; text-align:center;
+    animation:celebPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 0 60px rgba(212,175,55,0.15);
+    margin-top: 20px;
+  }
+  @keyframes celebPop { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:none} }
+  .celebration h2 { font-family:'Cinzel Decorative',serif;font-size:1.8rem;color:var(--gold);margin-bottom:10px; }
+  .celebration .big-piece { font-size:5rem;margin:14px 0;display:block; }
+  .celebration h3 { font-size:1.3rem;margin-bottom:6px; }
+  .celebration p { color:rgba(255,255,255,0.6);margin-bottom:20px; }
+  .play-again {
+    padding:12px 30px;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));
+    color:#000;border:none;border-radius:14px;cursor:pointer;
+    box-shadow:0 4px 20px rgba(212,175,55,0.3);transition:transform 0.2s;
+  }
+  .play-again:hover { transform:scale(1.05); }
+</style>
+</head>
+<body>
+<div class="chess-bg"></div>
+<div class="content">
+  <nav>
+    <a class="nav-home" href="index.html">← Hub</a>
+    <div class="nav-title">Chessdle</div>
+    <button class="nav-pancake" id="pancakeToggle"><img src="assets/pancakeicon.png" alt="">Pancake</button>
+  </nav>
+
+  <main>
+    <div class="header-center">
+      <div class="subtitle">Guess the hidden chess piece from the clues below</div>
+      <div class="guess-counter" id="guessCounter">Guesses: 0</div>
+    </div>
+
+    <div class="piece-grid" id="pieceGrid"></div>
+
+    <div id="col-headers">
+      <div class="ch"></div>
+      <div class="ch">Movement</div>
+      <div class="ch">Jump?</div>
+      <div class="ch">Range</div>
+      <div class="ch">Value</div>
+      <div class="ch">Direction</div>
+      <div class="ch">Qty (per side)</div>
+    </div>
+    <div id="feedback"></div>
+  </main>
+</div>
+
+<script>
+document.getElementById('pancakeToggle').addEventListener('click', ()=>document.body.classList.toggle('pancake-bg'));
+
+const chessPieces = [
+  {
+    name: "King",
+    symbol: "♚",
+    white: "♔",
+    movement: "1 Square",
+    canJump: "No",
+    range: "Short",
+    value: 0,
+    valueLabel: "∞ (Royal)",
+    direction: "Any",
+    qty: 1,
+  },
+  {
+    name: "Queen",
+    symbol: "♛",
+    white: "♕",
+    movement: "Any Direction",
+    canJump: "No",
+    range: "Long",
+    value: 9,
+    valueLabel: "9 pts",
+    direction: "Any",
+    qty: 1,
+  },
+  {
+    name: "Rook",
+    symbol: "♜",
+    white: "♖",
+    movement: "Straight Lines",
+    canJump: "No",
+    range: "Long",
+    value: 5,
+    valueLabel: "5 pts",
+    direction: "Horizontal/Vertical",
+    qty: 2,
+  },
+  {
+    name: "Bishop",
+    symbol: "♝",
+    white: "♗",
+    movement: "Diagonal",
+    canJump: "No",
+    range: "Long",
+    value: 3,
+    valueLabel: "3 pts",
+    direction: "Diagonal",
+    qty: 2,
+  },
+  {
+    name: "Knight",
+    symbol: "♞",
+    white: "♘",
+    movement: "L-Shape",
+    canJump: "Yes",
+    range: "Short",
+    value: 3,
+    valueLabel: "3 pts",
+    direction: "L-Shape",
+    qty: 2,
+  },
+  {
+    name: "Pawn",
+    symbol: "♟",
+    white: "♙",
+    movement: "Forward Only",
+    canJump: "No",
+    range: "Short",
+    value: 1,
+    valueLabel: "1 pt",
+    direction: "Forward",
+    qty: 8,
+  },
+];
+
+let secretPiece = chessPieces[Math.floor(Math.random() * chessPieces.length)];
+let guessCount = 0;
+let gameOver = false;
+
+const guessCounter = document.getElementById('guessCounter');
+const pieceGrid = document.getElementById('pieceGrid');
+const colHeaders = document.getElementById('col-headers');
+const feedback = document.getElementById('feedback');
+
+function buildGrid() {
+  pieceGrid.innerHTML = '';
+  chessPieces.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'piece-btn';
+    btn.dataset.name = p.name;
+    btn.innerHTML = `<div class="piece-symbol">${p.symbol}</div><div class="piece-name">${p.name}</div>`;
+    btn.onclick = () => guessWithPiece(p.name);
+    pieceGrid.appendChild(btn);
+  });
+}
+
+function createHint(heading, value, secretValue) {
+  const div = document.createElement('div');
+  div.className = 'hint';
+  div.innerHTML = `<div class="heading">${heading}</div><div class="val"></div>`;
+  const valEl = div.querySelector('.val');
+
+  const isCorrect = String(value) === String(secretValue);
+  let text = value;
+
+  if (isCorrect) {
+    div.classList.add('green');
+  } else {
+    div.classList.add('red');
+    // Numeric hints for value and qty
+    if (heading === 'Value' || heading === 'Qty (per side)') {
+      const numV = typeof value === 'number' ? value : 0;
+      const numS = typeof secretValue === 'number' ? secretValue : 0;
+      const label = typeof value === 'string' ? value : value;
+      if (numV < numS) text = `${label} ↑`;
+      else if (numV > numS) text = `${label} ↓`;
+    }
+  }
+  valEl.textContent = text;
+  return div;
+}
+
+function guessWithPiece(name) {
+  if (gameOver) return;
+  const piece = chessPieces.find(p => p.name === name);
+  if (!piece) return;
+
+  // Disable that button
+  const btn = pieceGrid.querySelector(`[data-name="${name}"]`);
+  if (btn) btn.classList.add('used');
+
+  guessCount++;
+  guessCounter.innerText = `Guesses: ${guessCount}`;
+  guessCounter.classList.add('bump');
+  setTimeout(()=>guessCounter.classList.remove('bump'),400);
+  colHeaders.style.display = 'grid';
+
+  if (piece.name === secretPiece.name) {
+    gameOver = true;
+    spawnConfetti();
+    const celeb = document.createElement('div');
+    celeb.className = 'celebration';
+    celeb.innerHTML = `
+      <h2>Checkmate!</h2>
+      <span class="big-piece">${secretPiece.symbol}</span>
+      <h3>${secretPiece.name}</h3>
+      <p>Guessed in <strong>${guessCount}</strong> guess${guessCount===1?'':'es'}</p>
+      <button class="play-again" onclick="playAgain()">Play Again ♟️</button>
+    `;
+    feedback.insertBefore(celeb, feedback.firstChild);
+    // Disable all buttons
+    pieceGrid.querySelectorAll('.piece-btn').forEach(b=>b.classList.add('used'));
+  } else {
+    const row = document.createElement('div');
+    row.className = 'piece-result';
+    const iconCell = document.createElement('div');
+    iconCell.className = 'piece-icon-cell';
+    iconCell.textContent = piece.symbol;
+    row.appendChild(iconCell);
+    row.appendChild(createHint('Movement', piece.movement, secretPiece.movement));
+    row.appendChild(createHint('Jump?', piece.canJump, secretPiece.canJump));
+    row.appendChild(createHint('Range', piece.range, secretPiece.range));
+    row.appendChild(createHint('Value', piece.valueLabel, secretPiece.valueLabel));
+    row.appendChild(createHint('Direction', piece.direction, secretPiece.direction));
+    row.appendChild(createHint('Qty (per side)', piece.qty, secretPiece.qty));
+    feedback.insertBefore(row, feedback.firstChild);
+  }
+}
+
+function spawnConfetti() {
+  const colors = ['#d4af37','#f5e27a','#fff','#22c55e','#a855f7'];
+  for(let i=0;i<60;i++){
+    const c=document.createElement('div');
+    c.style.cssText=`position:fixed;pointer-events:none;z-index:999;width:10px;height:10px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      left:${Math.random()*100}%;top:-20px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation:confettiFall ${Math.random()*2+1.5}s ${Math.random()*0.5}s linear forwards;`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4000);
+  }
+}
+
+const style = document.createElement('style');
+style.textContent = `@keyframes confettiFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}`;
+document.head.appendChild(style);
+
+function playAgain() {
+  secretPiece = chessPieces[Math.floor(Math.random() * chessPieces.length)];
+  guessCount = 0; gameOver = false;
+  guessCounter.innerText = 'Guesses: 0';
+  feedback.innerHTML = '';
+  colHeaders.style.display = 'none';
+  buildGrid();
+}
+
+buildGrid();
+</script>
+</body>
+</html>

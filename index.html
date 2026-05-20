@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Game Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD700;
+    --gold2: #FFA500;
+    --dark: #0a0a14;
+    --card-bg: rgba(15,15,35,0.85);
+    --blue: #3a7bd5;
+    --purple: #7c3aed;
+    --green: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--dark);
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: #fff;
+  }
+  .bg-stars {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 20%, #1a103a 0%, #0a0a14 60%);
+    overflow: hidden;
+  }
+  .bg-stars::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 45%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 35%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(2px 2px at 15% 75%, rgba(255,215,0,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 60% 85%, rgba(255,215,0,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,0.4) 0%, transparent 100%);
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle { 0%{opacity:0.6} 100%{opacity:1} }
+
+  .content { position: relative; z-index: 1; }
+
+  header {
+    text-align: center;
+    padding: 60px 20px 30px;
+    animation: fadeDown 0.8s ease both;
+  }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-30px)} to{opacity:1;transform:none} }
+
+  .logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    background: linear-gradient(135deg, #FFD700, #FFA500, #FFD700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(255,165,0,0.4));
+    letter-spacing: 0.05em;
+    line-height: 1.1;
+  }
+  .logo-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .pancake-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,165,0,0.15);
+    border: 1px solid rgba(255,165,0,0.3);
+    border-radius: 30px;
+    padding: 8px 18px;
+    color: var(--gold);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s;
+    text-decoration: none;
+  }
+  .pancake-btn:hover { background: rgba(255,165,0,0.3); transform: scale(1.05); }
+  .pancake-btn img { width: 24px; height: 24px; border-radius: 50%; }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    max-width: 1100px;
+    margin: 40px auto 80px;
+    padding: 0 30px;
+  }
+
+  .game-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: transform 0.3s, box-shadow 0.3s;
+    animation: fadeUp 0.6s ease both;
+    cursor: pointer;
+    position: relative;
+  }
+  .game-card:nth-child(1) { animation-delay: 0.1s; }
+  .game-card:nth-child(2) { animation-delay: 0.2s; }
+  .game-card:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+
+  .game-card:hover { transform: translateY(-8px); }
+  .game-card:hover .card-banner { filter: brightness(1.15); }
+
+  .card-banner {
+    height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem;
+    position: relative;
+    transition: filter 0.3s;
+    overflow: hidden;
+  }
+  .card-banner::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, var(--card-bg) 100%);
+  }
+  .clash-banner { background: linear-gradient(135deg, #1a3a6b, #2d6a9f, #1a3a6b); }
+  .chess-banner { background: linear-gradient(135deg, #1a1a1a, #4a4a4a, #2a2a2a); }
+  .wordle-banner { background: linear-gradient(135deg, #1a3a1a, #2d7a2d, #1a3a1a); }
+
+  .banner-emoji {
+    font-size: 5rem;
+    z-index: 1;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  .card-body { padding: 24px; }
+  .game-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+  }
+  .clash-title { color: #5ba3e0; }
+  .chess-title { color: #d4af37; }
+  .wordle-title { color: #4ade80; }
+
+  .game-desc { color: rgba(255,255,255,0.6); font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px; }
+
+  .play-btn {
+    display: inline-block;
+    padding: 10px 28px;
+    border-radius: 30px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .play-btn:hover { transform: scale(1.06); }
+  .clash-btn { background: linear-gradient(135deg, #3a7bd5, #00d2ff); color: #fff; box-shadow: 0 4px 20px rgba(58,123,213,0.4); }
+  .chess-btn { background: linear-gradient(135deg, #d4af37, #f5e27a); color: #000; box-shadow: 0 4px 20px rgba(212,175,55,0.4); }
+  .wordle-btn { background: linear-gradient(135deg, #22c55e, #86efac); color: #000; box-shadow: 0 4px 20px rgba(34,197,94,0.4); }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .clash-badge { background: rgba(58,123,213,0.2); color: #5ba3e0; border: 1px solid rgba(58,123,213,0.3); }
+  .chess-badge { background: rgba(212,175,55,0.2); color: #d4af37; border: 1px solid rgba(212,175,55,0.3); }
+  .wordle-badge { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+
+  footer {
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.8rem;
+    padding: 20px;
+    position: relative; z-index: 1;
+  }
+</style>
+</head>
+<body>
+<div class="bg-stars"></div>
+<div class="content">
+  <header>
+    <div class="logo">The Game Hub</div>
+    <div class="logo-sub">Infinite Daily Puzzles</div>
+    <a class="pancake-btn" id="pancakeToggle">
+      <img src="assets/pancakeicon.png" alt="🥞"> Pancake Mode
+    </a>
+  </header>
+
+  <div class="games-grid">
+    <a class="game-card" href="clashdle.html">
+      <div class="card-banner clash-banner">
+        <div class="banner-emoji">⚔️</div>
+      </div>
+      <div class="card-body">
+        <div class="badge clash-badge">Clash Royale</div>
+        <div class="game-title clash-title">Clashdle</div>
+        <div class="game-desc">Guess the hidden Clash Royale card using elixir cost, rarity, type, arena and more as hints.</div>
+        <div class="play-btn clash-btn">Play Now</div>
+      </div>
+    </a>
+
+    <a class="game-card" href="chessdle.html">
+      <div class="card-banner chess-banner">
+        <div class="banner-emoji" style="animation-delay:0.5s">♟️</div>
+      </div>
+      <div class="card-body">
+        <div class="badge chess-badge">Chess</div>
+        <div class="game-title chess-title">Chessdle</div>
+        <div class="game-desc">Identify the secret chess piece from clues about its movement, power, value and role on the board.</div>
+        <div class="play-btn chess-btn">Play Now</div>
+      </div>
+    </a>
+
+    <a class="game-card" href="wordle.html">
+      <div class="card-banner wordle-banner">
+        <div class="banner-emoji" style="animation-delay:1s">🔤</div>
+      </div>
+      <div class="card-body">
+        <div class="badge wordle-badge">Word Game</div>
+        <div class="game-title wordle-title">Wordle Unlimited</div>
+        <div class="game-desc">Classic 5-letter word guessing with unlimited plays. New word every game, play as many as you want!</div>
+        <div class="play-btn wordle-btn">Play Now</div>
+      </div>
+    </a>
+  </div>
+
+  <footer>Made with ❤️ · Infinite Puzzles · Play Forever</footer>
+</div>
+
+<script>
+  let pancakeMode = false;
+  document.getElementById('pancakeToggle').addEventListener('click', function() {
+    pancakeMode = !pancakeMode;
+    document.body.style.backgroundImage = pancakeMode ? "url('assets/pancakesbg.jpg')" : '';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+  });
+</script>
+</body>
+</html>

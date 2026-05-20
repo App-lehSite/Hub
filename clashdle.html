@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clashdle – Infinite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #FFD700; --gold2: #FFA500;
+    --dark: #050b18; --panel: rgba(10,20,50,0.85);
+    --blue: #3a7bd5; --blue2: #00d2ff;
+    --green: #22c55e; --red: #ef4444;
+    --border: rgba(58,123,213,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: radial-gradient(ellipse at 30% 10%, #0d1f40 0%, #050b18 70%);
+    min-height: 100vh; color: #fff;
+    background-attachment: fixed;
+  }
+  body.pancake-bg {
+    background-image: url('assets/pancakesbg.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+  }
+
+  /* Floating particles */
+  .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .particle {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(58,123,213,0.6), transparent);
+    animation: drift linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-20px) scale(1.2); opacity: 0; }
+  }
+
+  .content { position: relative; z-index: 1; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 30px;
+    background: rgba(5,11,24,0.8);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+  .nav-home {
+    font-family: 'Cinzel Decorative', serif;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+  .nav-home:hover { color: var(--gold); }
+  .nav-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.6rem;
+    background: linear-gradient(135deg, #5ba3e0, #00d2ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .nav-pancake {
+    background: none; border: 1px solid rgba(255,165,0,0.3);
+    border-radius: 20px; padding: 6px 14px;
+    color: var(--gold); font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .nav-pancake img { width: 20px; height: 20px; border-radius: 50%; }
+  .nav-pancake:hover { background: rgba(255,165,0,0.15); transform: scale(1.05); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 30px 20px 60px; }
+
+  .game-header {
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeDown 0.6s ease both;
+  }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:none} }
+
+  .guess-counter {
+    display: inline-block;
+    font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 20px; border-radius: 20px;
+    background: rgba(255,255,255,0.04);
+    margin-bottom: 20px;
+    transition: all 0.3s;
+  }
+  .guess-counter.bump { animation: bump 0.3s ease; }
+  @keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  .search-row {
+    display: flex; gap: 10px; justify-content: center; align-items: flex-start;
+    position: relative; margin-bottom: 10px;
+  }
+  .search-wrap {
+    position: relative; width: min(500px, 90vw);
+  }
+  #guess {
+    width: 100%; padding: 14px 20px;
+    font-family: 'Nunito', sans-serif; font-size: 1rem;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid var(--border);
+    border-radius: 14px; color: #fff;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #guess:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(58,123,213,0.2);
+  }
+  #guess::placeholder { color: rgba(255,255,255,0.3); }
+  
+  #suggestions {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: #0d1b35; border: 1px solid var(--border);
+    border-radius: 14px; max-height: 260px; overflow-y: auto;
+    display: none; z-index: 100;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  }
+  #suggestions::-webkit-scrollbar { width: 4px; }
+  #suggestions::-webkit-scrollbar-track { background: transparent; }
+  #suggestions::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .suggestion {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+  .suggestion:last-child { border-bottom: none; }
+  .suggestion:hover { background: rgba(58,123,213,0.15); }
+  .suggestion img { width: 40px; height: 40px; border-radius: 8px; }
+  .suggestion span { font-weight: 600; font-size: 0.95rem; }
+
+  #guessBtn {
+    padding: 14px 28px;
+    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    color: #fff; border: none; border-radius: 14px; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(58,123,213,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+  }
+  #guessBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(58,123,213,0.5); }
+  #guessBtn:active { transform: translateY(0); }
+
+  /* Column headers */
+  #col-headers {
+    display: none;
+    grid-template-columns: 100px repeat(8, 1fr);
+    gap: 8px;
+    max-width: 100%; margin: 20px auto 6px;
+    padding: 0 4px;
+  }
+  #col-headers .ch {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    text-align: center; padding: 0 4px;
+  }
+
+  /* Feedback rows */
+  #feedback { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+
+  .card-result {
+    display: grid;
+    grid-template-columns: 100px repeat(8, 1fr);
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(10,20,50,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    align-items: center;
+    animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-30px) scale(0.95); }
+    to { opacity: 1; transform: none; }
+  }
+  .card-result img {
+    width: 80px; height: 80px; border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    transition: transform 0.2s;
+  }
+  .card-result img:hover { transform: scale(1.1); }
+
+  .hint {
+    font-weight: 700; text-align: center; border-radius: 10px;
+    padding: 8px 6px; font-size: 0.78rem;
+    min-height: 64px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 4px;
+    transition: all 0.2s;
+  }
+  .hint:hover { transform: scale(1.04); }
+  .hint .heading {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em;
+    opacity: 0.7; font-weight: 800;
+  }
+  .hint .val { font-size: 0.85rem; }
+
+  .green {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(34,197,94,0.3);
+  }
+  .red {
+    background: linear-gradient(135deg, #b91c1c, #ef4444);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(239,68,68,0.3);
+  }
+  .yellow {
+    background: linear-gradient(135deg, #d97706, #fbbf24);
+    color: #000;
+    box-shadow: 0 2px 12px rgba(251,191,36,0.3);
+  }
+
+  /* Win celebration */
+  .celebration {
+    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 20px; padding: 30px;
+    text-align: center;
+    animation: celebPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 0 60px rgba(255,215,0,0.2);
+    margin-top: 20px;
+  }
+  @keyframes celebPop { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:none} }
+  .celebration h2 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.8rem; color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .celebration img { width: 100px; height: 100px; border-radius: 16px; margin: 14px 0; }
+  .celebration h3 { font-size: 1.3rem; margin-bottom: 6px; }
+  .celebration p { color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+  .celebration-stars { font-size: 2rem; letter-spacing: 0.2em; margin: 10px 0; }
+  .play-again {
+    padding: 12px 30px;
+    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #000; border: none; border-radius: 14px; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255,165,0,0.4);
+    transition: transform 0.2s;
+  }
+  .play-again:hover { transform: scale(1.05); }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed; pointer-events: none; z-index: 999;
+    width: 10px; height: 10px; border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+<div class="content">
+  <nav>
+    <a class="nav-home" href="index.html">← Hub</a>
+    <div class="nav-title">Clashdle</div>
+    <button class="nav-pancake" id="pancakeToggle">
+      <img src="assets/pancakeicon.png" alt="🥞"> Pancake
+    </button>
+  </nav>
+
+  <main>
+    <div class="game-header">
+      <div class="guess-counter" id="guessCounter">Guesses: 0</div>
+      <div class="search-row">
+        <div class="search-wrap">
+          <input type="text" id="guess" placeholder="Search for a Clash Royale card…" autocomplete="off">
+          <div id="suggestions"></div>
+        </div>
+        <button id="guessBtn" onclick="checkGuess()">Guess ⚔️</button>
+      </div>
+    </div>
+
+    <div id="col-headers">
+      <div class="ch"></div>
+      <div class="ch">Elixir</div>
+      <div class="ch">Rarity</div>
+      <div class="ch">Type</div>
+      <div class="ch">Arena</div>
+      <div class="ch">Speed</div>
+      <div class="ch">Range</div>
+      <div class="ch">Target</div>
+      <div class="ch">Hit Speed</div>
+    </div>
+    <div id="feedback"></div>
+  </main>
+</div>
+
+<script src="js/cards-data.js"></script>
+<script>
+// Particles
+(function(){
+  const cont = document.getElementById('particles');
+  for(let i=0;i<20;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    const size = Math.random()*80+20;
+    p.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.15+0.05};animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*10}s;`;
+    cont.appendChild(p);
+  }
+})();
+
+let secretCard = cards[Math.floor(Math.random() * cards.length)];
+let guessCount = 0;
+
+const input = document.getElementById("guess");
+const suggestionsEl = document.getElementById("suggestions");
+const feedback = document.getElementById("feedback");
+const guessCounter = document.getElementById("guessCounter");
+const colHeaders = document.getElementById("col-headers");
+
+document.getElementById('pancakeToggle').addEventListener('click', function(){
+  document.body.classList.toggle('pancake-bg');
+});
+
+input.addEventListener("input", function() {
+  const query = this.value.toLowerCase().trim();
+  suggestionsEl.innerHTML = "";
+  if (!query) { suggestionsEl.style.display = "none"; return; }
+  const matches = cards.filter(c => c.name.toLowerCase().includes(query)).slice(0, 10);
+  if (matches.length) {
+    matches.forEach(c => {
+      const div = document.createElement("div");
+      div.className = "suggestion";
+      div.innerHTML = `<img src="${c.icon}" onerror="this.style.opacity=0.3"><span>${c.name}</span>`;
+      div.onclick = () => { input.value = c.name; suggestionsEl.style.display = "none"; checkGuess(); };
+      suggestionsEl.appendChild(div);
+    });
+    suggestionsEl.style.display = "block";
+  } else { suggestionsEl.style.display = "none"; }
+});
+
+input.addEventListener("keydown", e => { if(e.key==="Enter") { suggestionsEl.style.display="none"; checkGuess(); } });
+document.addEventListener("click", e => {
+  if (!suggestionsEl.contains(e.target) && e.target !== input) suggestionsEl.style.display = "none";
+});
+
+const rarityOrder = ["Common","Rare","Epic","Legendary","Champion"];
+const speedOrder = ["Slow","Medium","Fast","Very Fast"];
+
+function isNumeric(n) { return !isNaN(parseFloat(n)) && isFinite(n); }
+
+function createHintBox(heading, value, secretValue) {
+  const div = document.createElement('div');
+  div.className = 'hint';
+  const h = document.createElement('div');
+  h.className = 'heading'; h.innerText = heading;
+  const valDiv = document.createElement('div');
+  valDiv.className = 'val';
+  div.appendChild(h); div.appendChild(valDiv);
+
+  const isCorrect = String(value) === String(secretValue);
+  let text = value ?? 'N/A';
+
+  if (isCorrect) {
+    div.classList.add('green');
+  } else {
+    div.classList.add('red');
+    if (heading === 'Rarity') {
+      const gi = rarityOrder.indexOf(value), si = rarityOrder.indexOf(secretValue);
+      text = `${value} ${gi < si ? '↑' : '↓'}`;
+    } else if (heading === 'Speed') {
+      const gi = speedOrder.indexOf(value), si = speedOrder.indexOf(secretValue);
+      if(gi>=0 && si>=0) text = `${value} ${gi < si ? '↑' : '↓'}`;
+    } else if (heading === 'Range') {
+      if (isNumeric(value) && isNumeric(secretValue)) text = `${value} ${value < secretValue ? '↑' : '↓'}`;
+      else if (value === 'Melee' && isNumeric(secretValue)) text = `${value} ↑`;
+      else if (isNumeric(value) && secretValue === 'Melee') text = `${value} ↓`;
+    } else if (isNumeric(value) && isNumeric(secretValue)) {
+      text = `${value} ${value < secretValue ? '↑' : '↓'}`;
+    }
+  }
+  valDiv.innerText = text;
+  return div;
+}
+
+function spawnConfetti() {
+  const colors = ['#FFD700','#FFA500','#3a7bd5','#22c55e','#ef4444','#a855f7'];
+  for(let i=0;i<80;i++){
+    const c=document.createElement('div');
+    c.className='confetti-piece';
+    c.style.cssText=`left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*0.5}s;
+      transform:rotate(${Math.random()*360}deg);border-radius:${Math.random()>0.5?'50%':'2px'};`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 4000);
+  }
+}
+
+function checkGuess() {
+  const guess = input.value.trim();
+  const card = cards.find(c => c.name.toLowerCase() === guess.toLowerCase());
+  if (!card) { input.style.borderColor='#ef4444'; setTimeout(()=>input.style.borderColor='',600); return; }
+
+  guessCount++;
+  guessCounter.innerText = `Guesses: ${guessCount}`;
+  guessCounter.classList.add('bump');
+  setTimeout(()=>guessCounter.classList.remove('bump'),400);
+  colHeaders.style.display = 'grid';
+
+  if (card.name === secretCard.name) {
+    spawnConfetti();
+    const celeb = document.createElement('div');
+    celeb.className = 'celebration';
+    celeb.innerHTML = `
+      <div class="celebration-stars">⭐ ⭐ ⭐</div>
+      <h2>Correct!</h2>
+      <img src="${secretCard.icon}" onerror="this.style.opacity=0.3">
+      <h3>${secretCard.name}</h3>
+      <p>Solved in <strong>${guessCount}</strong> guess${guessCount===1?'':'es'}</p>
+      <button class="play-again" onclick="playAgain()">Play Again ⚔️</button>
+    `;
+    feedback.insertBefore(celeb, feedback.firstChild);
+    input.disabled = true;
+    document.getElementById('guessBtn').disabled = true;
+  } else {
+    const guessDiv = document.createElement("div");
+    guessDiv.className = "card-result";
+    guessDiv.innerHTML = `<div><img src="${card.icon}" onerror="this.style.opacity=0.3"></div>`;
+    guessDiv.appendChild(createHintBox('Elixir', card.elixir, secretCard.elixir));
+    guessDiv.appendChild(createHintBox('Rarity', card.rarity, secretCard.rarity));
+    guessDiv.appendChild(createHintBox('Type', card.type, secretCard.type));
+    guessDiv.appendChild(createHintBox('Arena', card.arena, secretCard.arena));
+    guessDiv.appendChild(createHintBox('Speed', card.speed, secretCard.speed));
+    guessDiv.appendChild(createHintBox('Range', card.range, secretCard.range));
+    guessDiv.appendChild(createHintBox('Target', card.target, secretCard.target));
+    guessDiv.appendChild(createHintBox('Hit Speed', card.hitSpeed, secretCard.hitSpeed));
+    feedback.insertBefore(guessDiv, feedback.firstChild);
+  }
+
+  input.value = "";
+  input.focus();
+}
+
+function playAgain() {
+  secretCard = cards[Math.floor(Math.random() * cards.length)];
+  guessCount = 0;
+  guessCounter.innerText = "Guesses: 0";
+  feedback.innerHTML = "";
+  colHeaders.style.display = 'none';
+  input.disabled = false;
+  document.getElementById('guessBtn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>

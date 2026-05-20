@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle Unlimited</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark: #121213; --panel: rgba(18,18,19,0.95);
+    --green: #538d4e; --yellow: #b59f3b; --gray: #3a3a3c;
+    --border: rgba(255,255,255,0.15);
+    --key-bg: #818384;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: radial-gradient(ellipse at 50% 0%, #0d1f10 0%, #121213 60%);
+    min-height: 100vh; color: #fff;
+    background-attachment: fixed;
+  }
+  body.pancake-bg {
+    background-image: url('assets/pancakesbg.jpg') !important;
+    background-size: cover !important; background-position: center !important;
+    background-attachment: fixed !important;
+  }
+  .content { position: relative; z-index: 1; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 30px;
+    background: rgba(18,18,19,0.95);
+    border-bottom: 1px solid rgba(58,58,60,0.8);
+    backdrop-filter: blur(10px);
+  }
+  .nav-home { font-family:'Cinzel Decorative',serif;color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.8rem;letter-spacing:0.1em;transition:color 0.2s; }
+  .nav-home:hover { color:#4ade80; }
+  .nav-title { font-family:'Cinzel Decorative',serif;font-size:1.4rem;background:linear-gradient(135deg,#22c55e,#86efac);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+  .nav-right { display:flex;align-items:center;gap:10px; }
+  .nav-pancake { background:none;border:1px solid rgba(255,165,0,0.3);border-radius:20px;padding:6px 14px;color:#fbbf24;font-family:'Nunito',sans-serif;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s; }
+  .nav-pancake img { width:20px;height:20px;border-radius:50%; }
+  .nav-pancake:hover { background:rgba(255,165,0,0.1); }
+  .streak-badge { font-size:0.8rem;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px; }
+
+  main { max-width: 520px; margin: 0 auto; padding: 20px 20px 60px; }
+
+  /* Toast notification */
+  #toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.95); color: #000;
+    padding: 12px 24px; border-radius: 10px; font-weight: 700;
+    font-size: 1rem; z-index: 200; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+
+  /* Board */
+  #board {
+    display: grid; grid-template-rows: repeat(6, 1fr);
+    gap: 6px; margin: 20px auto;
+    width: min(350px, 90vw); height: min(420px, 65vw);
+  }
+  .board-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+
+  .tile {
+    border: 2px solid #3a3a3c;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    text-transform: uppercase; color: #fff;
+    transition: border-color 0.1s;
+    position: relative; overflow: hidden;
+    user-select: none;
+  }
+  .tile.filled { border-color: #565758; }
+  .tile.pop { animation: tilePop 0.1s ease; }
+  @keyframes tilePop { 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
+
+  .tile.shake { animation: tileShake 0.4s ease; }
+  @keyframes tileShake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+  }
+
+  .tile.flip { animation: tileFlip 0.5s ease forwards; }
+  @keyframes tileFlip {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+  }
+
+  .tile.correct { background: var(--green); border-color: var(--green); }
+  .tile.present { background: var(--yellow); border-color: var(--yellow); }
+  .tile.absent  { background: var(--gray); border-color: var(--gray); }
+
+  /* Stats row */
+  #stats-row {
+    display: flex; justify-content: center; gap: 30px;
+    margin: 10px 0 16px; text-align: center;
+  }
+  .stat { }
+  .stat-num { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); }
+
+  /* Keyboard */
+  #keyboard { margin: 20px auto 0; max-width: 500px; }
+  .key-row { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
+  .key {
+    height: 58px; min-width: 43px; flex: 1; max-width: 43px;
+    background: var(--key-bg); color: #fff;
+    border: none; border-radius: 6px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.85rem;
+    text-transform: uppercase; transition: background 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none;
+  }
+  .key:active { transform: scale(0.96); }
+  .key.wide { min-width: 65px; max-width: 65px; font-size: 0.75rem; }
+  .key.correct { background: var(--green); }
+  .key.present { background: var(--yellow); }
+  .key.absent  { background: var(--gray); }
+
+  /* Win/lose panel */
+  .result-panel {
+    text-align: center;
+    background: rgba(30,30,30,0.9);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 28px;
+    margin: 20px 0;
+    animation: celebPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
+  }
+  @keyframes celebPop { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:none} }
+  .result-panel.win { border-color: rgba(83,141,78,0.5); box-shadow: 0 0 60px rgba(83,141,78,0.2); }
+  .result-panel.lose { border-color: rgba(239,68,68,0.3); }
+  .result-panel h2 { font-family:'Cinzel Decorative',serif;font-size:1.6rem;margin-bottom:10px; }
+  .result-panel.win h2 { color: #4ade80; }
+  .result-panel.lose h2 { color: #f87171; }
+  .result-panel .the-word { font-size: 2rem; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; margin: 12px 0; }
+  .result-panel p { color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+  .new-game-btn {
+    padding: 13px 32px; font-family:'Nunito',sans-serif; font-size:1rem; font-weight:800;
+    background: linear-gradient(135deg,#22c55e,#86efac);
+    color:#000; border:none; border-radius:14px; cursor:pointer;
+    box-shadow:0 4px 20px rgba(34,197,94,0.3); transition:transform 0.2s;
+  }
+  .new-game-btn:hover { transform:scale(1.05); }
+</style>
+</head>
+<body>
+<div class="content">
+  <nav>
+    <a class="nav-home" href="index.html">← Hub</a>
+    <div class="nav-title">Wordle∞</div>
+    <div class="nav-right">
+      <div class="streak-badge">🔥 <span id="streakNum">0</span></div>
+      <button class="nav-pancake" id="pancakeToggle"><img src="assets/pancakeicon.png" alt="">Pancake</button>
+    </div>
+  </nav>
+
+  <div id="toast"></div>
+
+  <main>
+    <div id="stats-row">
+      <div class="stat"><div class="stat-num" id="statPlayed">0</div><div class="stat-label">Played</div></div>
+      <div class="stat"><div class="stat-num" id="statWon">0</div><div class="stat-label">Won</div></div>
+      <div class="stat"><div class="stat-num" id="statStreak">0</div><div class="stat-label">Streak</div></div>
+    </div>
+    <div id="board"></div>
+    <div id="result-area"></div>
+    <div id="keyboard"></div>
+  </main>
+</div>
+
+<script>
+document.getElementById('pancakeToggle').addEventListener('click', ()=>document.body.classList.toggle('pancake-bg'));
+
+// ---- Word List ----
+const WORDS = ["about","above","abuse","actor","acute","admit","adopt","adult","after","again","agent","agree","ahead","alarm","album","alert","alike","align","alive","alley","allow","alone","along","aloud","alter","angel","angry","anime","ankle","annex","antic","anvil","apart","apple","apply","apron","argue","arise","armor","army","aroma","arose","array","arson","atlas","attic","audio","audit","augur","avoid","awake","aware","awash","awful","badly","bagel","baker","bases","basic","basis","batch","badge","baked","barge","baron","beard","beast","began","begin","being","below","bench","beset","birch","black","blade","blame","blank","blast","blaze","bleak","blend","bless","blew","blind","block","blood","bloom","blown","blown","blues","blunt","blurb","bolts","bonus","boost","booth","border","botch","bound","boxer","brain","brand","brave","break","breed","brick","brief","bring","brisk","broil","broke","brown","brute","build","built","bully","bulge","bunch","burns","burst","buyer","byway","cable","camel","candy","carry","cause","cease","chalk","chase","check","cheek","chess","chest","chief","chime","chip","choir","chunk","civic","civil","claim","clash","class","clean","clear","clerk","click","cling","clock","clone","close","cloud","clown","cluck","clued","clues","coast","comet","comic","comma","coral","couch","could","count","court","covet","crack","craft","crash","crave","crazy","creak","cream","creek","crest","crisp","cross","crowd","crown","crumb","crush","crust","crypt","cubic","cubic","curly","curse","curve","cycle","daily","dance","daisy","datum","debut","decor","decoy","delay","dense","depot","depth","derby","devil","digit","dimly","diner","dirty","disco","disco","dizzy","dodge","doing","doubt","dough","drain","drama","drawl","drawn","dread","dream","dried","drift","drink","drive","drone","drool","droop","dross","drove","duchy","dukes","dunce","dusty","eager","eagle","earns","earth","eight","elder","elect","elite","empty","endow","enjoy","enter","entry","envoy","epoch","equip","erase","error","essay","evade","event","every","exact","exert","exist","extra","exult","fable","faith","false","farce","fatal","favor","feast","fence","ferry","fetch","fever","fewer","fiery","fifth","fifty","fight","filet","final","finds","first","fixed","flame","flare","flash","flask","fleck","fleet","flesh","fling","flint","float","flock","floor","flour","flout","flush","focal","focus","foggy","folio","folks","folly","force","forge","found","fresh","front","frost","froze","fruit","fully","funny","furry","futon","fuzzy","gauge","giant","given","gland","glare","glide","glimpse","gloom","gloss","glove","glyph","gnash","going","goner","gooey","grace","grade","graft","grain","grand","grant","grasp","gravy","great","greed","green","greet","grind","groan","groin","grope","group","grove","growl","grown","gruff","grump","guile","gusto","habit","harsh","haste","hasty","haunt","haven","heard","heart","heavy","hedge","hence","herbs","herby","hippo","hitch","hoist","holly","homer","honor","horse","hotel","hound","hover","human","humid","humor","hurry","hatch","husky","icing","ideal","image","imply","imply","incur","index","indie","inept","infer","inner","input","inter","inure","ionic","irony","issue","ivory","jaunt","jelly","juicy","jumpy","kayak","knack","kneel","knife","knoll","knows","kooky","label","lanky","lapse","large","laser","latch","later","lathe","lemon","level","light","limit","liner","liver","local","logic","lofty","lowly","lucid","lucky","lumpy","lunch","lying","magic","major","maker","manor","maple","marble","march","match","mayor","media","mercy","merit","metal","mimic","mirth","miser","moist","moral","mourn","mouse","movie","muddy","muggy","mulch","mummy","music","musty","naval","noise","north","noted","novel","nurse","nymph","ocean","offer","often","olive","omega","onset","optic","orbit","order","organ","other","otter","ought","ought","outer","oxide","ozone","paint","panic","papal","pasta","paste","pasty","patch","pause","peace","peach","pearl","pedal","penal","penny","petal","picky","pilot","piney","plain","plait","plane","plank","plant","plate","plaza","plead","pleat","pluck","plumb","plume","plump","plunk","plush","poise","poker","polar","polka","poppy","porch","pounce","power","prank","press","price","prick","pried","prime","print","prize","probe","prone","proof","prose","prowl","prude","pulse","punch","puppy","purse","quest","quill","quirk","quite","quota","quote","raven","rebel","reign","relax","renew","repay","repel","repot","reset","resin","reuse","risky","rival","rivet","robot","rocky","round","rowdy","royal","rugby","ruler","rupee","rusty","sable","sadly","saint","salad","sauce","savor","scary","scone","score","scout","screw","scrub","seedy","serve","seven","sever","shaky","shame","shape","share","shark","sharp","shave","shawl","sheer","shelf","shell","shift","shine","shrub","shrug","sight","silly","since","sixth","sixty","skate","skimp","skull","slate","slick","slide","slime","slump","small","smart","smear","smell","smile","smite","smoke","snack","snail","sneak","sneer","sniff","snowy","solar","solve","south","spare","spark","spawn","spear","speck","spell","spend","spice","spire","spite","split","spoof","spook","spoon","spore","sport","spout","spray","squab","squib","stack","stage","stain","stale","stall","stamp","stank","stark","start","stash","stave","stays","steak","steal","steam","steel","stern","stiff","still","sting","stink","stock","stoic","stony","stool","stoop","store","storm","story","stout","stove","strap","straw","stray","strip","strut","stuck","study","stump","sting","style","sugar","sumac","sunny","super","surge","swamp","swarm","swear","sweep","sweet","swept","swirl","swoon","table","tasty","taunt","taupe","tawny","teens","teeth","tense","terms","thank","theme","there","these","thick","those","three","threw","thumb","thyme","tight","timid","tipsy","tired","title","today","token","tonal","topic","total","touch","tough","tower","toxin","trace","track","trade","trail","train","trait","tramp","trick","tried","trill","trout","trove","truce","truck","truly","trunk","trust","tubby","tulip","tumor","tuner","tutor","tweak","twice","twist","tying","udder","ultra","under","unify","unite","unity","until","upper","upset","urban","usher","usual","utter","vague","value","valve","vapid","vault","venom","verge","vigil","vigor","viral","virus","visor","vista","vivid","vocal","vogue","voice","voila","voter","waltz","waste","watch","water","weary","weave","wedge","weird","while","which","white","whole","whose","wider","windy","witty","woozy","world","worse","worst","worth","would","wound","wreck","wring","wrong","yacht","yearn","yield","young","youth","zesty","zippy","lover","lurid","maxim","mambo","melee","mural","mealy","moody","manic","motto","mealy","nasty","needy","never","nifty","nippy","noble","notch","nutty","offal","other","outdo","outwit","pesky","petty","piety","pithy","prank","prior","privy","proxy","putty","queasy","query","rabid","rainy","ratty","ready","regal","reply","repay","risky","ritzy","roomy","rowdy","ruddy","rusty","sassy","saucy","savvy","seamy","seedy","sevvy","shady","skimp","slimy","sloppy","smart","smoky","snaky","snidy","snooty","soggy","solvey","soppy","soupy","soupy","spiky","spiny","spooky","sporty","spotty","spunky","spunky","staid","stony","stark","stern","strut","sulky","sunny","surly","swexy","tacky","tawdry","testy","tinny","tippy","tired","toffy","tonal","toffy","toxic","tripe","trite","tubby","testy","usury","vapid","vaunt","venal","vixen","wacky","wanky","warty","weedy","wimpy","witty","wordy","woken","yacht"];
+
+const VALID = new Set(WORDS.map(w=>w.toLowerCase()));
+// Also accept any 5-letter guess
+function isValidWord(w) { return w.length === 5 && /^[a-z]+$/i.test(w); }
+
+let stats = JSON.parse(localStorage.getItem('wordle_stats')||'{"played":0,"won":0,"streak":0}');
+let secretWord = '';
+let currentRow = 0;
+let currentCol = 0;
+let currentGuess = [];
+let gameOver = false;
+let tiles = [];
+let keyMap = {};
+
+function pickWord() {
+  return WORDS[Math.floor(Math.random() * WORDS.length)];
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = ''; tiles = [];
+  for(let r=0;r<6;r++){
+    const row = document.createElement('div');
+    row.className = 'board-row';
+    tiles[r] = [];
+    for(let c=0;c<5;c++){
+      const t = document.createElement('div');
+      t.className = 'tile';
+      row.appendChild(t);
+      tiles[r][c] = t;
+    }
+    board.appendChild(row);
+  }
+}
+
+function buildKeyboard() {
+  const rows = [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l'],
+    ['Enter','z','x','c','v','b','n','m','⌫']
+  ];
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = ''; keyMap = {};
+  rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'key-row';
+    row.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'key' + (k.length > 1 ? ' wide' : '');
+      btn.textContent = k.toUpperCase() === 'ENTER' ? 'Enter' : k.toUpperCase() === '⌫' ? '⌫' : k.toUpperCase();
+      btn.dataset.key = k;
+      btn.onclick = () => handleKey(k);
+      rowEl.appendChild(btn);
+      if(k.length === 1) keyMap[k.toLowerCase()] = btn;
+    });
+    kb.appendChild(rowEl);
+  });
+}
+
+function updateStats() {
+  document.getElementById('statPlayed').textContent = stats.played;
+  document.getElementById('statWon').textContent = stats.won;
+  document.getElementById('statStreak').textContent = stats.streak;
+  document.getElementById('streakNum').textContent = stats.streak;
+}
+
+function showToast(msg, duration=1600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+function handleKey(k) {
+  if(gameOver) return;
+  if(k === '⌫' || k === 'Backspace') {
+    if(currentCol > 0) {
+      currentCol--;
+      currentGuess.pop();
+      tiles[currentRow][currentCol].textContent = '';
+      tiles[currentRow][currentCol].classList.remove('filled');
+    }
+    return;
+  }
+  if(k === 'Enter') { submitGuess(); return; }
+  if(/^[a-zA-Z]$/.test(k) && currentCol < 5) {
+    const letter = k.toLowerCase();
+    currentGuess.push(letter);
+    const tile = tiles[currentRow][currentCol];
+    tile.textContent = letter.toUpperCase();
+    tile.classList.add('filled');
+    tile.classList.add('pop');
+    setTimeout(()=>tile.classList.remove('pop'), 150);
+    currentCol++;
+  }
+}
+
+function submitGuess() {
+  if(currentCol < 5) { shakeRow(currentRow); showToast('Not enough letters'); return; }
+  const guess = currentGuess.join('');
+  if(!isValidWord(guess)) { shakeRow(currentRow); showToast('Not in word list'); return; }
+
+  // Score the guess
+  const secret = secretWord.split('');
+  const result = Array(5).fill('absent');
+  const used = Array(5).fill(false);
+  const guessUsed = Array(5).fill(false);
+
+  // Correct pass
+  for(let i=0;i<5;i++) {
+    if(currentGuess[i] === secret[i]) { result[i]='correct'; used[i]=true; guessUsed[i]=true; }
+  }
+  // Present pass
+  for(let i=0;i<5;i++) {
+    if(guessUsed[i]) continue;
+    for(let j=0;j<5;j++) {
+      if(!used[j] && currentGuess[i] === secret[j]) { result[i]='present'; used[j]=true; break; }
+    }
+  }
+
+  // Animate tiles with flip reveal
+  result.forEach((res, i) => {
+    const tile = tiles[currentRow][i];
+    setTimeout(()=>{
+      tile.style.transition = 'background 0s, transform 0.25s';
+      tile.style.transform = 'scaleY(0)';
+      setTimeout(()=>{
+        tile.classList.add(res);
+        tile.style.transform = 'scaleY(1)';
+      }, 200);
+
+      // Update keyboard
+      const letter = currentGuess[i];
+      const keyEl = keyMap[letter];
+      if(keyEl) {
+        const cur = keyEl.dataset.state;
+        if(res==='correct') { keyEl.dataset.state='correct'; keyEl.classList.remove('present','absent'); keyEl.classList.add('correct'); }
+        else if(res==='present' && cur!=='correct') { keyEl.dataset.state='present'; keyEl.classList.remove('absent'); keyEl.classList.add('present'); }
+        else if(res==='absent' && !cur) { keyEl.dataset.state='absent'; keyEl.classList.add('absent'); }
+      }
+    }, i * 200);
+  });
+
+  const won = result.every(r=>r==='correct');
+  setTimeout(()=>{
+    if(won) {
+      gameOver = true;
+      stats.played++; stats.won++; stats.streak++;
+      localStorage.setItem('wordle_stats', JSON.stringify(stats));
+      updateStats();
+      spawnConfetti();
+      setTimeout(()=>showResult(true, currentRow+1), 400);
+    } else {
+      currentRow++;
+      currentCol = 0;
+      currentGuess = [];
+      if(currentRow >= 6) {
+        gameOver = true;
+        stats.played++; stats.streak = 0;
+        localStorage.setItem('wordle_stats', JSON.stringify(stats));
+        updateStats();
+        setTimeout(()=>showResult(false), 400);
+      }
+    }
+  }, 5 * 200 + 300);
+}
+
+function showResult(won, guesses) {
+  const area = document.getElementById('result-area');
+  const panel = document.createElement('div');
+  panel.className = 'result-panel ' + (won ? 'win' : 'lose');
+  const msgs = ['Genius!','Magnificent!','Impressive!','Splendid!','Great!','Phew!'];
+  panel.innerHTML = `
+    <h2>${won ? msgs[guesses-1] : 'Out of guesses!'}</h2>
+    <div class="the-word">${secretWord.toUpperCase()}</div>
+    <p>${won ? `Solved in ${guesses} guess${guesses===1?'':'es'}` : 'Better luck next time!'}</p>
+    <button class="new-game-btn" onclick="startGame()">New Game 🔤</button>
+  `;
+  area.innerHTML = '';
+  area.appendChild(panel);
+}
+
+function shakeRow(row) {
+  tiles[row].forEach(t=>{ t.classList.add('shake'); setTimeout(()=>t.classList.remove('shake'),500); });
+}
+
+function spawnConfetti() {
+  const colors = ['#538d4e','#b59f3b','#22c55e','#86efac','#fff','#fbbf24'];
+  for(let i=0;i<70;i++){
+    const c=document.createElement('div');
+    c.style.cssText=`position:fixed;pointer-events:none;z-index:999;width:${Math.random()*8+4}px;height:${Math.random()*8+4}px;border-radius:${Math.random()>0.5?'50%':'2px'};left:${Math.random()*100}%;top:-20px;background:${colors[Math.floor(Math.random()*colors.length)]};animation:cfFall ${Math.random()*2+1.5}s ${Math.random()*0.5}s linear forwards;`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4000);
+  }
+}
+
+const cfStyle = document.createElement('style');
+cfStyle.textContent = `@keyframes cfFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}`;
+document.head.appendChild(cfStyle);
+
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  if(e.key === 'Enter') handleKey('Enter');
+  else if(e.key === 'Backspace') handleKey('⌫');
+  else if(/^[a-zA-Z]$/.test(e.key)) handleKey(e.key);
+});
+
+function startGame() {
+  secretWord = pickWord();
+  currentRow = 0; currentCol = 0; currentGuess = []; gameOver = false;
+  buildBoard();
+  buildKeyboard();
+  document.getElementById('result-area').innerHTML = '';
+  updateStats();
+}
+
+startGame();
+</script>
+</body>
+</html>
