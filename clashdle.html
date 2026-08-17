@@ -7,7 +7,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ably Realtime SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/ably@1.2.35/build/ably.min.js"></script>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -380,16 +380,18 @@
         <span id="notifMessage">Notification message</span>
     </div>
 
-    <script>
-        // DEVELOPER ABLY REALTIME KEY
-        const DEVELOPER_ABLY_KEY = "0_JpqA.xtQA5Q:ItbPZKZygMnpj76wfvA0eEanCRzyS8daddnTu4H50do";
+    <script type="module">
+        // --- ABLY CONFIGURATION ---
+        // Insert your Ably API key here
+        const ABLY_API_KEY = "0_JpqA.25FIlg:7J1_RBqpqJ6cgDkZJDPO-voo0jKmSV04DqPh634HzTY";
+        
+        let ably = null;
+        let roomChannel = null;
 
-        let ablyClient = null;
-        let ablyChannel = null;
+        let clientId = 'user_' + Math.random().toString(36).substring(2, 8);
         let currentGameCode = null;
         let isHost = true;
-        let clientId = 'user_' + Math.random().toString(36).substring(2, 8);
-        
+
         let gameState = {
             status: 'lobby',
             startPage: 'Dog',
@@ -412,19 +414,38 @@
         let hasUsedPreview = false;
         let previewTimerInterval = null;
 
-        // Set initial nickname & ID display
-        document.getElementById('playerNicknameInput').value = "Racer_" + Math.floor(Math.random() * 900 + 100);
-        document.getElementById('currentUserDisplay').innerText = `ID: ${clientId.substring(0, 6)}`;
+        function initCloudSync() {
+            if (ABLY_API_KEY && ABLY_API_KEY !== "YOUR_ABLY_API_KEY_HERE") {
+                try {
+                    ably = new Ably.Realtime({ key: ABLY_API_KEY, clientId: clientId });
+                    ably.connection.on('connected', () => {
+                        console.log("Connected to Ably Realtime network!");
+                    });
+                } catch (err) {
+                    console.warn("Ably client initialization failed:", err);
+                }
+            } else {
+                console.warn("Ably API key not provided. Running in local fallback mode.");
+            }
 
-        // Initialize state for current user
-        gameState.players[clientId] = {
-            name: document.getElementById('playerNicknameInput').value,
-            isHost: true,
-            status: 'lobby',
-            path: [],
-            clicks: 0,
-            time: 0
-        };
+            document.getElementById('currentUserDisplay').innerText = `ID: ${clientId.substring(0, 6)}`;
+            
+            // Set initial nickname
+            document.getElementById('playerNicknameInput').value = "Racer_" + Math.floor(Math.random() * 900 + 100);
+
+            // Initialize local player state
+            gameState.players[clientId] = {
+                name: document.getElementById('playerNicknameInput').value,
+                isHost: true,
+                status: 'lobby',
+                path: [],
+                clicks: 0,
+                time: 0
+            };
+        }
+
+        // Initialize connection on load
+        initCloudSync();
 
         // Sidebar Responsive Toggle
         const sidebar = document.getElementById('sidebar');
@@ -483,59 +504,64 @@
         }
         window.enterActiveLobbyView = enterActiveLobbyView;
 
-        function initAbly(code) {
-            try {
-                if (ablyClient) ablyClient.close();
-                ablyClient = new Ably.Realtime({ key: DEVELOPER_ABLY_KEY, clientId: clientId });
-                ablyChannel = ablyClient.channels.get('wikirace_v5_' + code);
-                
-                ablyChannel.subscribe('gameState', (message) => {
-                    const receivedState = message.data;
-                    
-                    // Merge player list cleanly
-                    if (receivedState && receivedState.players) {
-                        gameState.status = receivedState.status;
-                        gameState.startPage = receivedState.startPage;
-                        gameState.targetPage = receivedState.targetPage;
-                        gameState.allowFind = receivedState.allowFind;
-                        gameState.players = receivedState.players;
-                        if (receivedState.chat) gameState.chat = receivedState.chat;
-
-                        renderGameState();
-
-                        if (gameState.status === 'countdown' && document.getElementById('countdownOverlay').classList.contains('hidden')) {
-                            runCountdownAndStart();
-                        } else if (gameState.status === 'finished') {
-                            stopTimer();
-                            showResultsModal();
-                        }
-                    }
-                });
-
-                ablyChannel.subscribe('requestState', () => {
-                    if (isHost) {
-                        publishGameState();
-                    }
-                });
-
-                ablyChannel.subscribe('chatMessage', (message) => {
-                    if (!gameState.chat) gameState.chat = [];
-                    gameState.chat.push(message.data);
-                    renderChat();
-                });
-
-                return true;
-            } catch (err) {
-                console.error("Ably error:", err);
-                showNotification("Multiplayer connection warning: Running in local mode.");
-                return false;
+        function subscribeToRoom(code) {
+            if (roomChannel) {
+                roomChannel.unsubscribe();
             }
+
+            if (!ably) return;
+
+            // Get channel dedicated to this room code
+            roomChannel = ably.channels.get(`wikirace:${code}`);
+
+            // Listen for room state updates
+            roomChannel.subscribe('state-update', (message) => {
+                const remoteData = message.data;
+                
+                gameState.status = remoteData.status || gameState.status;
+                gameState.startPage = remoteData.startPage || gameState.startPage;
+                gameState.targetPage = remoteData.targetPage || gameState.targetPage;
+                gameState.allowFind = remoteData.allowFind !== undefined ? remoteData.allowFind : gameState.allowFind;
+                
+                // Merge remote player states cleanly
+                if (remoteData.players) {
+                    gameState.players = { ...gameState.players, ...remoteData.players };
+                }
+
+                renderGameState();
+
+                if (gameState.status === 'countdown' && document.getElementById('countdownOverlay').classList.contains('hidden')) {
+                    runCountdownAndStart();
+                } else if (gameState.status === 'finished') {
+                    stopTimer();
+                    showResultsModal();
+                }
+            });
+
+            // Listen for incoming chat messages
+            roomChannel.subscribe('chat-message', (message) => {
+                if (!gameState.chat) gameState.chat = [];
+                gameState.chat.push(message.data);
+                renderChat();
+            });
+
+            // Request state update from host when joining
+            if (!isHost) {
+                roomChannel.publish('request-state', { requestingClientId: clientId });
+            }
+
+            // Host responds to state requests
+            roomChannel.subscribe('request-state', () => {
+                if (isHost) {
+                    publishGameState();
+                }
+            });
         }
 
-        function publishGameState() {
+        async function publishGameState() {
             renderGameState();
-            if (ablyChannel) {
-                ablyChannel.publish('gameState', gameState);
+            if (roomChannel) {
+                roomChannel.publish('state-update', gameState);
             }
         }
 
@@ -594,13 +620,11 @@
             }
         }
 
-        function createGame() {
+        async function createGame() {
             const nickname = document.getElementById('playerNicknameInput').value.trim() || "Racer";
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             currentGameCode = code;
             isHost = true;
-
-            initAbly(code);
 
             gameState = {
                 status: 'lobby',
@@ -613,13 +637,14 @@
                 chat: []
             };
 
-            publishGameState();
+            subscribeToRoom(code);
+            await publishGameState();
             enterActiveLobbyView();
             showNotification("Multiplayer Room Created: " + code);
         }
         window.createGame = createGame;
 
-        function joinGame() {
+        async function joinGame() {
             const nickname = document.getElementById('playerNicknameInput').value.trim() || "Racer";
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
             if (!code) {
@@ -629,23 +654,23 @@
             currentGameCode = code;
             isHost = false;
 
-            initAbly(code);
+            gameState.players[clientId] = { name: nickname, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
 
-            setTimeout(() => {
-                if (!gameState.players) gameState.players = {};
-                gameState.players[clientId] = { name: nickname, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
-                ablyChannel.publish('requestState', {});
-                publishGameState();
-                enterActiveLobbyView();
-                showNotification("Joined Room: " + code);
-            }, 400);
+            subscribeToRoom(code);
+            await publishGameState();
+
+            enterActiveLobbyView();
+            showNotification("Joined Room: " + code);
         }
         window.joinGame = joinGame;
 
-        function leaveGame() {
-            if (gameState.players && gameState.players[clientId]) {
+        async function leaveGame() {
+            if (roomChannel) {
+                roomChannel.unsubscribe();
+                roomChannel = null;
+            }
+            if (gameState.players[clientId]) {
                 delete gameState.players[clientId];
-                publishGameState();
             }
             currentGameCode = null;
             isHost = true;
@@ -705,7 +730,7 @@
             gameState.status = 'countdown';
             publishGameState();
 
-            if (!ablyChannel) {
+            if (!ably || !currentGameCode) {
                 runCountdownAndStart();
             }
         }
@@ -1055,7 +1080,7 @@
                         <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
                         <span class="text-[#767673] font-chivo font-normal">${p.clicks || 0} clicks | Time: ${min}:${sec}</span>
                     </div>
-                    <div class="text-[11px] text-[#555552] font-serif bg-white p-2.5 rounded border border-[#e5e5e3] overflow-x-auto whitespace-nowrap">
+                    <div class="text-[11px] text-[#555552] font-serif bg-[#ffffff] p-2.5 rounded border border-[#e5e5e3] overflow-x-auto whitespace-nowrap">
                         ${pathStr}
                     </div>
                 `;
@@ -1075,7 +1100,7 @@
         }
         window.closeResultsModal = closeResultsModal;
 
-        function sendChatMessage() {
+        async function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
@@ -1083,13 +1108,14 @@
             const nickname = gameState.players[clientId]?.name || "Racer";
             const chatMsg = { sender: nickname, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             
-            if (ablyChannel) {
-                ablyChannel.publish('chatMessage', chatMsg);
+            if (roomChannel) {
+                roomChannel.publish('chat-message', chatMsg);
             } else {
                 if (!gameState.chat) gameState.chat = [];
                 gameState.chat.push(chatMsg);
                 renderChat();
             }
+
             input.value = '';
         }
         window.sendChatMessage = sendChatMessage;
