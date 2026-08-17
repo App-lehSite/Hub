@@ -33,6 +33,7 @@
             background: #d3d3d1;
             border-radius: 3px;
         }
+        
         /* Custom styling for embedded Wikipedia article contents */
         #wikiContent p {
             margin-bottom: 1.25rem;
@@ -48,6 +49,7 @@
             padding-bottom: 0.35rem;
             border-bottom: 1px solid #e5e5e3;
             color: #121212;
+            clear: both;
         }
         #wikiContent h3 {
             font-family: 'Libre Baskerville', serif;
@@ -78,6 +80,32 @@
             margin: 1rem auto;
             display: block;
         }
+
+        /* Easy Mode Layout Elements: Table of Contents & Infobox */
+        .wiki-infobox {
+            float: right;
+            margin: 0 0 1.5rem 1.5rem;
+            width: 300px;
+            background-color: #f7f7f6;
+            border: 1px solid #e5e5e3;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-size: 0.85rem;
+        }
+        .wiki-toc {
+            background-color: #f7f7f6;
+            border: 1px solid #e5e5e3;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+        .wiki-toc ul {
+            list-style-type: none !important;
+            margin-left: 0.5rem !important;
+            margin-bottom: 0 !important;
+        }
+
         .preview-progress-bar {
             transition: width 1s linear;
         }
@@ -112,6 +140,11 @@
                     <span class="hidden sm:inline">Peek Target (10s)</span>
                     <span class="sm:hidden">Peek</span>
                 </button>
+            </div>
+            <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
+            <div class="flex items-center space-x-1.5 text-xs">
+                <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Mode:</span>
+                <span id="modeDisplay" class="font-bold text-[#121212] font-chivo uppercase">EASY</span>
             </div>
             <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
             <div class="flex items-center space-x-1.5 text-xs">
@@ -218,6 +251,15 @@
                                     </svg>
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Difficulty Switcher (Hard Mode Toggle) -->
+                        <div class="bg-[#f7f7f6] p-2.5 rounded border border-[#e5e5e3] space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-chivo font-bold text-[#121212]">Hard Mode</span>
+                                <input type="checkbox" id="configHardMode" class="w-4 h-4 accent-[#121212] cursor-pointer">
+                            </div>
+                            <p class="text-[10px] text-[#767673] leading-tight">Hard Mode removes side infoboxes & table of contents to hide quick shortcut links!</p>
                         </div>
 
                         <div class="flex items-center justify-between pt-1">
@@ -382,7 +424,6 @@
 
     <script type="module">
         // --- ABLY CONFIGURATION ---
-        // Insert your Ably API key here
         const ABLY_API_KEY = "0_JpqA.25FIlg:7J1_RBqpqJ6cgDkZJDPO-voo0jKmSV04DqPh634HzTY";
         
         let ably = null;
@@ -396,6 +437,7 @@
             status: 'lobby',
             startPage: 'Dog',
             targetPage: 'Cat',
+            hardMode: false,
             allowFind: true,
             players: {},
             chat: []
@@ -521,9 +563,9 @@
                 gameState.status = remoteData.status || gameState.status;
                 gameState.startPage = remoteData.startPage || gameState.startPage;
                 gameState.targetPage = remoteData.targetPage || gameState.targetPage;
+                gameState.hardMode = remoteData.hardMode !== undefined ? remoteData.hardMode : gameState.hardMode;
                 gameState.allowFind = remoteData.allowFind !== undefined ? remoteData.allowFind : gameState.allowFind;
                 
-                // Merge remote player states cleanly
                 if (remoteData.players) {
                     gameState.players = { ...gameState.players, ...remoteData.players };
                 }
@@ -578,6 +620,7 @@
             if (!isHost) {
                 document.getElementById('configStartPage').value = gameState.startPage || 'Dog';
                 document.getElementById('configTargetPage').value = gameState.targetPage || 'Cat';
+                document.getElementById('configHardMode').checked = gameState.hardMode === true;
                 document.getElementById('configAllowFind').checked = gameState.allowFind !== false;
                 document.getElementById('hostControls').classList.add('hidden');
             } else if (gameState.status === 'lobby') {
@@ -630,6 +673,7 @@
                 status: 'lobby',
                 startPage: document.getElementById('configStartPage').value.trim() || 'Dog',
                 targetPage: document.getElementById('configTargetPage').value.trim() || 'Cat',
+                hardMode: document.getElementById('configHardMode').checked,
                 allowFind: document.getElementById('configAllowFind').checked,
                 players: {
                     [clientId]: { name: nickname, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
@@ -722,9 +766,11 @@
             if (isHost) {
                 const startInput = document.getElementById('configStartPage');
                 const targetInput = document.getElementById('configTargetPage');
+                const hardInput = document.getElementById('configHardMode');
                 const findInput = document.getElementById('configAllowFind');
                 if (startInput) gameState.startPage = startInput.value.trim() || 'Dog';
                 if (targetInput) gameState.targetPage = targetInput.value.trim() || 'Cat';
+                if (hardInput) gameState.hardMode = hardInput.checked;
                 if (findInput) gameState.allowFind = findInput.checked;
             }
             gameState.status = 'countdown';
@@ -766,6 +812,12 @@
             document.getElementById('gameStatusBar').classList.add('flex');
             document.getElementById('targetArticleDisplay').innerText = gameState.targetPage;
             
+            const modeDisplay = document.getElementById('modeDisplay');
+            if (modeDisplay) {
+                modeDisplay.innerText = gameState.hardMode ? 'HARD' : 'EASY';
+                modeDisplay.className = gameState.hardMode ? 'font-bold text-red-600 font-chivo uppercase' : 'font-bold text-green-600 font-chivo uppercase';
+            }
+
             // Reset Target Preview state for new match
             hasUsedPreview = false;
             const previewBtn = document.getElementById('previewTargetBtn');
@@ -807,13 +859,26 @@
             return result;
         }
 
-        // Sanitizer to ensure Wikipedia images and relative URLs load robustly
-        function processWikiHtml(html) {
+        // Sanitizer to handle Hard Mode (stripping Infobox & TOC) vs Easy Mode
+        function processWikiHtml(html, isHardMode = false) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            // Remove non-essential clutter and layout-breaking components
-            doc.querySelectorAll('.mw-editsection, .reference, .navbox, .vertical-navbox, .infobox, .sistersitebox, table.ambox, .reflist, .thumbcaption, style, script, .hatnote, .mw-jump-link').forEach(el => el.remove());
+            // Standard clutter cleanup
+            doc.querySelectorAll('.mw-editsection, .reference, .navbox, .vertical-navbox, .sistersitebox, table.ambox, .reflist, .thumbcaption, style, script, .hatnote, .mw-jump-link').forEach(el => el.remove());
+
+            if (isHardMode) {
+                // HARD MODE: Strip out infoboxes, side tables, and table of contents entirely
+                doc.querySelectorAll('.infobox, .toc, #toc, table.vertical-navbox, .sidebar').forEach(el => el.remove());
+            } else {
+                // EASY MODE: Format infobox and table of contents nicely
+                doc.querySelectorAll('.infobox').forEach(box => {
+                    box.className = 'wiki-infobox';
+                });
+                doc.querySelectorAll('.toc, #toc').forEach(toc => {
+                    toc.className = 'wiki-toc';
+                });
+            }
 
             // Process image tags to force valid HTTPS URLs and fallbacks
             doc.querySelectorAll('img').forEach(img => {
@@ -831,9 +896,9 @@
                         src = 'https://en.wikipedia.org' + src;
                     }
                     img.setAttribute('src', src);
-                    img.removeAttribute('srcset'); // Clear srcset to prevent broken relative URL resolution
+                    img.removeAttribute('srcset');
                     img.className = 'my-4 rounded max-w-full h-auto mx-auto border border-[#e5e5e3] shadow-sm block';
-                    img.setAttribute('onerror', "this.style.display='none';"); // Hide broken images cleanly
+                    img.setAttribute('onerror', "this.style.display='none';");
                 }
             });
 
@@ -866,7 +931,7 @@
                     handlePlayerWon();
                 }
 
-                const doc = processWikiHtml(resolved.html);
+                const doc = processWikiHtml(resolved.html, gameState.hardMode);
 
                 // Re-link valid internal Wikipedia article links
                 doc.querySelectorAll('a').forEach(a => {
@@ -934,7 +999,7 @@
 
             try {
                 const resolved = await fetchWithRedirectResolution(gameState.targetPage);
-                const doc = processWikiHtml(resolved.html);
+                const doc = processWikiHtml(resolved.html, gameState.hardMode);
                 
                 // Disable all links inside target preview
                 doc.querySelectorAll('a').forEach(a => {
@@ -1055,7 +1120,6 @@
             const titleEl = document.getElementById('modalWinnerTitle');
             const listEl = document.getElementById('resultsListContainer');
 
-            // Find winner
             let winnerName = "Someone";
             for (let id in gameState.players) {
                 if (gameState.players[id].status === 'finished') {
