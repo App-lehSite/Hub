@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ably Realtime SDK -->
     <script src="https://cdn.jsdelivr.net/npm/ably@1.2.35/build/ably.min.js"></script>
-    <!-- Google Fonts: Editorial Serif & Clean Sans -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -22,7 +22,6 @@
         .font-chivo {
             font-family: 'Chivo', sans-serif;
         }
-        /* Custom scrollbar for NYT editorial feel */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -34,50 +33,100 @@
             background: #d3d3d1;
             border-radius: 3px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b5b5b3;
+        /* Custom styling for embedded Wikipedia article contents */
+        #wikiContent p {
+            margin-bottom: 1.25rem;
+            line-height: 1.75;
+            font-size: 1.05rem;
         }
-        /* Blind effect overlay */
-        #blindOverlay {
-            transition: opacity 0.3s ease;
+        #wikiContent h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid #e5e5e3;
+            color: #121212;
+        }
+        #wikiContent h3 {
+            font-family: 'Libre Baskerville', serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+        #wikiContent ul, #wikiContent ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.25rem;
+            list-style-type: disc;
+        }
+        #wikiContent li {
+            margin-bottom: 0.35rem;
+        }
+        #wikiContent figure, #wikiContent .thumb {
+            margin: 1.5rem auto;
+            max-width: 100%;
+        }
+        #wikiContent img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e5e3;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin: 1rem auto;
+            display: block;
+        }
+        .preview-progress-bar {
+            transition: width 1s linear;
         }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden select-none">
 
     <!-- NYT Games Header -->
-    <header class="bg-[#ffffff] border-b border-[#e5e5e3] px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-30">
-        <div class="flex items-center space-x-4">
+    <header class="bg-[#ffffff] border-b border-[#e5e5e3] px-4 md:px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-30">
+        <div class="flex items-center space-x-3 md:space-x-4">
             <button id="sidebarToggle" class="p-2 text-[#767673] hover:text-[#121212] hover:bg-[#f1f1f0] rounded transition-colors" title="Toggle Sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
             <div class="flex flex-col">
-                <span class="text-[10px] tracking-widest font-chivo font-bold text-[#767673] uppercase">The New York Times</span>
-                <h1 class="font-serif font-bold text-xl text-[#121212] tracking-tight">The Wiki Race</h1>
+                <span class="text-[9px] md:text-[10px] tracking-widest font-chivo font-bold text-[#767673] uppercase">The New York Times</span>
+                <h1 class="font-serif font-bold text-lg md:text-xl text-[#121212] tracking-tight">The Wiki Race</h1>
             </div>
         </div>
 
-        <div id="gameStatusBar" class="hidden items-center space-x-6 bg-[#f7f7f6] px-4 py-1.5 rounded-full border border-[#e5e5e3]">
-            <div class="flex items-center space-x-2 text-xs">
-                <span class="text-[#767673] uppercase tracking-wider font-chivo">Target:</span>
-                <span id="targetArticleDisplay" class="font-serif font-bold text-[#121212] underline decoration-[#000000] underline-offset-2">Loading...</span>
+        <!-- Dynamic Game Status Bar -->
+        <div id="gameStatusBar" class="hidden items-center space-x-3 md:space-x-6 bg-[#f7f7f6] px-3 md:px-4 py-1.5 rounded-full border border-[#e5e5e3]">
+            <div class="flex items-center space-x-1.5 md:space-x-2 text-xs">
+                <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Target:</span>
+                <span id="targetArticleDisplay" class="font-serif font-bold text-[#121212] underline decoration-[#000000] underline-offset-2 truncate max-w-[100px] md:max-w-[160px]">Loading...</span>
+                <button id="previewTargetBtn" onclick="openTargetPreview()" class="ml-1 md:ml-2 px-2.5 py-1 bg-[#121212] hover:bg-[#333333] text-white text-[10px] font-chivo uppercase tracking-wider font-bold rounded-full transition-all shadow-sm flex items-center space-x-1 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span class="hidden sm:inline">Peek Target (10s)</span>
+                    <span class="sm:hidden">Peek</span>
+                </button>
             </div>
             <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
-            <div class="flex items-center space-x-2 text-xs">
-                <span class="text-[#767673] uppercase tracking-wider font-chivo">Clicks:</span>
+            <div class="flex items-center space-x-1.5 text-xs">
+                <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Clicks:</span>
                 <span id="clickCountDisplay" class="font-bold text-[#121212]">0</span>
             </div>
             <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
-            <div class="flex items-center space-x-2 text-xs">
-                <span class="text-[#767673] uppercase tracking-wider font-chivo">Time:</span>
+            <div class="flex items-center space-x-1.5 text-xs">
+                <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Time:</span>
                 <span id="timerDisplay" class="font-mono font-bold text-[#121212]">00:00</span>
             </div>
         </div>
 
         <div class="flex items-center space-x-3">
-            <div id="currentUserDisplay" class="text-xs font-chivo text-[#767673] bg-[#f1f1f0] px-3 py-1.5 rounded">ID: --</div>
+            <div id="currentUserDisplay" class="text-xs font-chivo text-[#767673] bg-[#f1f1f0] px-2.5 py-1 rounded border border-[#e5e5e3]">ID: --</div>
         </div>
     </header>
 
@@ -95,31 +144,31 @@
             <!-- Tab: Lobby -->
             <div id="tabLobbyContent" class="flex-1 overflow-y-auto p-5 space-y-6">
                 
-                <!-- Lobby Landing (Create / Join) -->
+                <!-- Lobby Landing View -->
                 <div id="lobbyLanding" class="space-y-4">
                     <div class="space-y-1">
                         <h2 class="font-serif font-bold text-lg text-[#121212]">Welcome, Racer</h2>
-                        <p class="text-xs text-[#767673]">Race friends from a starting Wikipedia page to a target page by clicking links.</p>
+                        <p class="text-xs text-[#767673] leading-relaxed">Race solo or with friends from a starting Wikipedia article to a target article purely by clicking internal links.</p>
                     </div>
 
                     <div class="space-y-3 pt-2">
                         <div>
                             <label class="block text-[11px] font-chivo uppercase tracking-wider text-[#767673] mb-1">Your Nickname</label>
-                            <input type="text" id="playerNicknameInput" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] focus:outline-none focus:border-[#121212]" placeholder="Enter nickname">
+                            <input type="text" id="playerNicknameInput" onchange="updateNickname()" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] focus:outline-none focus:border-[#121212]" placeholder="Enter nickname">
                         </div>
 
                         <button onclick="createGame()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 px-4 rounded transition-colors shadow-sm">
-                            Create New Game
+                            Create Multiplayer Room
                         </button>
 
                         <div class="relative flex py-2 items-center">
                             <div class="flex-grow border-t border-[#e5e5e3]"></div>
-                            <span class="flex-shrink mx-3 text-[10px] text-[#767673] font-chivo uppercase tracking-widest">or join</span>
+                            <span class="flex-shrink mx-3 text-[10px] text-[#767673] font-chivo uppercase tracking-widest">or join existing</span>
                             <div class="flex-grow border-t border-[#e5e5e3]"></div>
                         </div>
 
                         <div class="flex space-x-2">
-                            <input type="text" id="joinCodeInput" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] uppercase tracking-wider focus:outline-none focus:border-[#121212]" placeholder="Game Code">
+                            <input type="text" id="joinCodeInput" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] uppercase tracking-wider focus:outline-none focus:border-[#121212]" placeholder="Room Code">
                             <button onclick="joinGame()" class="bg-[#f1f1f0] hover:bg-[#e5e5e3] text-[#121212] font-chivo uppercase text-xs tracking-wider font-bold px-4 py-2 rounded transition-colors border border-[#d3d3d1]">
                                 Join
                             </button>
@@ -128,36 +177,52 @@
                 </div>
 
                 <!-- Active Lobby View -->
-                <div id="activeLobby" class="space-y-6 hidden">
-                    <div class="bg-[#f7f7f6] border border-[#e5e5e3] rounded-lg p-4 space-y-3">
+                <div id="activeLobby" class="space-y-5 hidden">
+                    <div class="bg-[#f7f7f6] border border-[#e5e5e3] rounded-lg p-3.5 space-y-2.5">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-chivo uppercase tracking-widest text-[#767673]">Game Code</span>
-                            <span id="displayGameCode" class="font-mono font-bold text-sm bg-white px-2 py-0.5 rounded border border-[#d3d3d1]">----</span>
+                            <span class="text-[10px] font-chivo uppercase tracking-widest text-[#767673]">Room Code</span>
+                            <span id="displayGameCode" class="font-mono font-bold text-sm bg-white px-2.5 py-0.5 rounded border border-[#d3d3d1] tracking-wider">----</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] font-chivo uppercase tracking-widest text-[#767673]">Status</span>
-                            <span id="displayGameStatus" class="text-xs font-semibold text-[#2b6cb0] uppercase font-chivo">Waiting</span>
+                            <span id="displayGameStatus" class="text-xs font-bold text-[#2b6cb0] uppercase font-chivo">Waiting</span>
                         </div>
                     </div>
 
                     <!-- Host Controls -->
-                    <div id="hostControls" class="space-y-4 hidden border-t border-[#e5e5e3] pt-4">
-                        <h3 class="font-serif font-bold text-sm text-[#121212]">Host Settings</h3>
+                    <div id="hostControls" class="space-y-3.5 border-t border-[#e5e5e3] pt-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-serif font-bold text-sm text-[#121212]">Match Settings</h3>
+                            <span class="text-[10px] font-chivo text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded uppercase font-bold">Host</span>
+                        </div>
                         
-                        <div class="space-y-2">
-                            <label class="block text-[11px] font-chivo uppercase tracking-wider text-[#767673]">Match Preset (Optional JSON)</label>
-                            <input type="file" id="presetFileInput" accept=".json" onchange="loadPresetFile(event)" class="w-full text-xs text-[#767673] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-chivo file:font-bold file:bg-[#f1f1f0] file:text-[#121212] hover:file:bg-[#e5e5e3] cursor-pointer">
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-chivo uppercase text-[#767673]">Start Article</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="configStartPage" value="Dog" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
+                                <button onclick="shuffleStartPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Random Start Page">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] font-chivo uppercase text-[#767673] mb-1">Start Page</label>
-                                <input type="text" id="configStartPage" value="Dog" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-chivo uppercase text-[#767673]">Target Article</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="configTargetPage" value="Cat" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
+                                <button onclick="shuffleTargetPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Random Target Page">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                                    </svg>
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-chivo uppercase text-[#767673] mb-1">Target Page</label>
-                                <input type="text" id="configTargetPage" value="Cat" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
-                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <span class="text-xs font-chivo uppercase text-[#767673]">Allow Find (Ctrl+F)</span>
+                            <input type="checkbox" id="configAllowFind" checked class="w-4 h-4 accent-[#121212] cursor-pointer">
                         </div>
 
                         <button onclick="startGame()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 rounded transition-colors shadow-sm">
@@ -165,30 +230,19 @@
                         </button>
                     </div>
 
-                    <!-- Host Abilities (Only available when game is active & user is host) -->
-                    <div id="hostAbilitiesPanel" class="space-y-3 hidden border-t border-[#e5e5e3] pt-4">
-                        <h3 class="font-serif font-bold text-sm text-[#121212]">Host Sabotage</h3>
-                        <p class="text-[11px] text-[#767673]">Trigger effects to disrupt opponents during the race.</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="triggerAbility('blind')" class="bg-[#fff5f5] hover:bg-[#fed7d7] text-[#c53030] border border-[#feb2b2] font-chivo text-xs uppercase font-bold py-2 px-3 rounded transition-colors">
-                                Temp Blind
-                            </button>
-                            <button onclick="triggerAbility('scramble')" class="bg-[#fffaf0] hover:bg-[#feebc8] text-[#c05621] border border-[#fbd38d] font-chivo text-xs uppercase font-bold py-2 px-3 rounded transition-colors">
-                                Scramble Text
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Players List -->
+                    <!-- Players & Live Leaderboard -->
                     <div class="space-y-2 border-t border-[#e5e5e3] pt-4">
-                        <h3 class="font-serif font-bold text-sm text-[#121212]">Players in Lobby</h3>
-                        <div id="playersListContainer" class="space-y-1.5 max-h-48 overflow-y-auto">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-serif font-bold text-sm text-[#121212]">Racers</h3>
+                            <span id="playerCountBadge" class="text-[10px] font-mono text-[#767673]">1 player</span>
+                        </div>
+                        <div id="playersListContainer" class="space-y-1.5 max-h-56 overflow-y-auto">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
 
-                    <button onclick="leaveGame()" class="w-full bg-transparent hover:bg-[#fff5f5] text-[#c53030] border border-[#feb2b2] font-chivo uppercase text-xs tracking-wider font-bold py-2.5 rounded transition-colors">
-                        Leave Game
+                    <button onclick="leaveGame()" class="w-full bg-transparent hover:bg-[#fff5f5] text-[#c53030] border border-[#feb2b2] font-chivo uppercase text-xs tracking-wider font-bold py-2 rounded transition-colors">
+                        Leave Room
                     </button>
                 </div>
             </div>
@@ -210,25 +264,27 @@
         <!-- Wikipedia Reader Viewport -->
         <main class="flex-1 flex flex-col bg-[#ffffff] relative overflow-hidden">
             
-            <!-- Blind Sabotage Overlay -->
-            <div id="blindOverlay" class="absolute inset-0 bg-[#121212] z-50 opacity-0 pointer-events-none flex flex-col items-center justify-center text-white space-y-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-[#d3d3d1] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                </svg>
-                <h2 class="font-serif text-xl tracking-wide">Temp Blind Active</h2>
-                <p class="text-xs text-[#a3a3a0] font-chivo uppercase tracking-widest">Your screen has been temporarily obscured!</p>
+            <!-- Countdown Overlay -->
+            <div id="countdownOverlay" class="absolute inset-0 bg-black/70 z-50 hidden flex flex-col items-center justify-center text-white space-y-4">
+                <span class="text-xs font-chivo uppercase tracking-widest text-[#d3d3d1]">Get Ready to Race...</span>
+                <h1 id="countdownNumber" class="font-serif font-bold text-9xl text-white animate-bounce">3</h1>
             </div>
 
-            <!-- Pre-game / Lobby Waiting Screen -->
-            <div id="readerWelcomeState" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                <div class="w-16 h-16 rounded-full bg-[#f1f1f0] flex items-center justify-center text-[#767673]">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                </div>
-                <div class="space-y-1 max-w-md">
-                    <h2 class="font-serif font-bold text-2xl text-[#121212]">Ready to Race?</h2>
-                    <p class="text-xs text-[#767673] leading-relaxed">Create a lobby or join your friends using a game code in the sidebar. Once the host starts the match, navigate from the starting Wikipedia article to the target article as fast as possible!</p>
+            <!-- Pre-game Welcome State -->
+            <div id="readerWelcomeState" class="flex-1 flex items-center justify-center p-6 overflow-y-auto">
+                <div class="bg-[#f7f7f6] border border-[#e5e5e3] rounded-xl p-8 max-w-lg w-full text-center space-y-5 shadow-sm">
+                    <div class="w-14 h-14 rounded-full bg-white border border-[#e5e5e3] flex items-center justify-center text-[#767673] mx-auto shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <div class="space-y-2">
+                        <h2 class="font-serif font-bold text-2xl text-[#121212]">Ready to Race?</h2>
+                        <p class="text-xs text-[#767673] leading-relaxed max-w-sm mx-auto">Create a room or join friends with a code in the sidebar, or click below to start a quick solo match.</p>
+                    </div>
+                    <button onclick="startGame()" class="bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 px-6 rounded transition-colors shadow-sm w-full">
+                        Quick Start Solo Match
+                    </button>
                 </div>
             </div>
 
@@ -248,7 +304,7 @@
             </div>
 
             <!-- Actual Wikipedia Article Container -->
-            <div id="wikiScrollContainer" class="flex-1 overflow-y-auto px-8 py-10 hidden">
+            <div id="wikiScrollContainer" class="flex-1 overflow-y-auto px-6 md:px-12 py-8 hidden">
                 <div id="wikiContent" class="max-w-3xl mx-auto prose font-serif text-[#222222] leading-relaxed pb-20">
                     <!-- Wikipedia HTML injected here -->
                 </div>
@@ -257,49 +313,88 @@
     </div>
 
     <!-- Game Over / Results Modal -->
-    <div id="resultsModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full p-6 space-y-6 border border-[#e5e5e3] max-h-[90vh] flex flex-col">
-            <div class="text-center space-y-1">
-                <span class="text-xs font-chivo uppercase tracking-widest text-[#767673]">Match Finished</span>
-                <h2 id="modalWinnerTitle" class="font-serif font-bold text-2xl text-[#121212]">Winner: Someone</h2>
+    <div id="resultsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-6 border border-[#e5e5e3] max-h-[90vh] flex flex-col">
+            <div class="text-center space-y-1 border-b border-[#e5e5e3] pb-4">
+                <span class="text-xs font-chivo uppercase tracking-widest text-[#767673]">Race Completed</span>
+                <h2 id="modalWinnerTitle" class="font-serif font-bold text-2xl text-[#121212]">Winner: Someone!</h2>
             </div>
 
             <div class="flex-1 overflow-y-auto space-y-4 pr-1">
-                <h3 class="font-serif font-bold text-sm text-[#121212]">Player Results & Paths</h3>
+                <h3 class="font-serif font-bold text-sm text-[#121212]">Racer Paths & Results</h3>
                 <div id="resultsListContainer" class="space-y-3">
                     <!-- Populated dynamically -->
                 </div>
             </div>
 
-            <button onclick="closeResultsModal()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 rounded transition-colors shadow-sm">
+            <button onclick="closeResultsModal()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 rounded transition-colors shadow-sm shrink-0">
                 Return to Lobby
             </button>
         </div>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Target Article Quick Preview Modal (10 Seconds, Single Use) -->
+    <div id="targetPreviewModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-3 md:p-6 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col h-[85vh] border border-[#e5e5e3] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-[#121212] text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-[#e53e3e] text-white text-[10px] font-chivo uppercase font-bold px-2 py-0.5 rounded tracking-wider">Preview Mode</span>
+                    <h3 id="previewModalTitle" class="font-serif font-bold text-sm md:text-base tracking-wide truncate max-w-xs">Target Article Preview</h3>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-1.5 bg-white/10 px-3 py-1 rounded-full text-xs font-mono font-bold">
+                        <span class="text-[10px] text-white/70 uppercase font-chivo">TIME LEFT:</span>
+                        <span id="previewCountdownDisplay" class="text-red-400 font-extrabold text-sm">10s</span>
+                    </div>
+                    <button onclick="closeTargetPreview()" class="text-white/70 hover:text-white p-1 rounded transition-colors" title="Close Preview">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Dynamic Progress Bar -->
+            <div class="w-full bg-[#333333] h-1.5 shrink-0 overflow-hidden">
+                <div id="previewProgressBar" class="preview-progress-bar bg-red-500 h-full w-full"></div>
+            </div>
+
+            <!-- Modal Body / Article Content -->
+            <div id="previewModalContent" class="flex-1 overflow-y-auto p-6 font-serif text-[#222222] leading-relaxed text-sm">
+                <!-- Preview HTML populated dynamically -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-[#f7f7f6] border-t border-[#e5e5e3] px-5 py-3 flex items-center justify-between shrink-0 text-xs text-[#767673] font-chivo">
+                <span class="text-[11px]">Note: Preview is view-only (links are disabled & single-use per race).</span>
+                <button onclick="closeTargetPreview()" class="bg-[#121212] hover:bg-[#333333] text-white px-4 py-1.5 rounded font-bold transition-colors text-xs">
+                    Close Preview Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Toast -->
     <div id="customNotification" class="fixed bottom-6 right-6 bg-[#121212] text-white text-xs px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center space-x-2">
         <span id="notifMessage">Notification message</span>
     </div>
 
     <script>
-        // ==========================================
-        // DEVELOPER ABLY CONFIGURATION
-        // ==========================================
-        // Paste your developer Ably API key below:
+        // DEVELOPER ABLY REALTIME KEY
         const DEVELOPER_ABLY_KEY = "0_JpqA.xtQA5Q:ItbPZKZygMnpj76wfvA0eEanCRzyS8daddnTu4H50do";
-        // ==========================================
 
         let ablyClient = null;
         let ablyChannel = null;
         let currentGameCode = null;
-        let isHost = false;
+        let isHost = true;
         let clientId = 'user_' + Math.random().toString(36).substring(2, 8);
         
         let gameState = {
             status: 'lobby',
             startPage: 'Dog',
             targetPage: 'Cat',
+            allowFind: true,
             players: {},
             chat: []
         };
@@ -309,11 +404,29 @@
         let startTime = null;
         let timerInterval = null;
 
-        // Set default nickname
+        // Ultra-fast in-memory page cache & prefetching
+        const pageCache = new Map();
+        let hoverPrefetchTimer = null;
+
+        // Preview state variables
+        let hasUsedPreview = false;
+        let previewTimerInterval = null;
+
+        // Set initial nickname & ID display
         document.getElementById('playerNicknameInput').value = "Racer_" + Math.floor(Math.random() * 900 + 100);
         document.getElementById('currentUserDisplay').innerText = `ID: ${clientId.substring(0, 6)}`;
 
-        // Sidebar Toggle
+        // Initialize state for current user
+        gameState.players[clientId] = {
+            name: document.getElementById('playerNicknameInput').value,
+            isHost: true,
+            status: 'lobby',
+            path: [],
+            clicks: 0,
+            time: 0
+        };
+
+        // Sidebar Responsive Toggle
         const sidebar = document.getElementById('sidebar');
         let sidebarOpen = true;
         document.getElementById('sidebarToggle').addEventListener('click', () => {
@@ -355,51 +468,145 @@
             }, 3000);
         }
 
-        function initAbly(code) {
-            if (!DEVELOPER_ABLY_KEY || DEVELOPER_ABLY_KEY === "YOUR_ABLY_API_KEY_HERE") {
-                showNotification("Developer Ably API key not configured in the code!");
-                return false;
+        window.updateNickname = function() {
+            const val = document.getElementById('playerNicknameInput').value.trim();
+            if (val && gameState.players[clientId]) {
+                gameState.players[clientId].name = val;
+                publishGameState();
             }
+        };
+
+        function enterActiveLobbyView() {
+            document.getElementById('lobbyLanding').classList.add('hidden');
+            document.getElementById('activeLobby').classList.remove('hidden');
+            renderGameState();
+        }
+        window.enterActiveLobbyView = enterActiveLobbyView;
+
+        function initAbly(code) {
             try {
                 if (ablyClient) ablyClient.close();
                 ablyClient = new Ably.Realtime({ key: DEVELOPER_ABLY_KEY, clientId: clientId });
-                ablyChannel = ablyClient.channels.get('wikirace_' + code);
+                ablyChannel = ablyClient.channels.get('wikirace_v5_' + code);
                 
                 ablyChannel.subscribe('gameState', (message) => {
-                    gameState = message.data;
-                    renderGameState();
+                    const receivedState = message.data;
+                    
+                    // Merge player list cleanly
+                    if (receivedState && receivedState.players) {
+                        gameState.status = receivedState.status;
+                        gameState.startPage = receivedState.startPage;
+                        gameState.targetPage = receivedState.targetPage;
+                        gameState.allowFind = receivedState.allowFind;
+                        gameState.players = receivedState.players;
+                        if (receivedState.chat) gameState.chat = receivedState.chat;
+
+                        renderGameState();
+
+                        if (gameState.status === 'countdown' && document.getElementById('countdownOverlay').classList.contains('hidden')) {
+                            runCountdownAndStart();
+                        } else if (gameState.status === 'finished') {
+                            stopTimer();
+                            showResultsModal();
+                        }
+                    }
+                });
+
+                ablyChannel.subscribe('requestState', () => {
+                    if (isHost) {
+                        publishGameState();
+                    }
                 });
 
                 ablyChannel.subscribe('chatMessage', (message) => {
+                    if (!gameState.chat) gameState.chat = [];
                     gameState.chat.push(message.data);
                     renderChat();
                 });
 
-                ablyChannel.subscribe('ability', (message) => {
-                    if (message.data === 'blind') triggerBlindEffect();
-                    if (message.data === 'scramble') triggerScrambleEffect();
-                });
-
                 return true;
             } catch (err) {
-                console.error("Ably initialization error:", err);
-                showNotification("Failed to connect to Ably.");
+                console.error("Ably error:", err);
+                showNotification("Multiplayer connection warning: Running in local mode.");
                 return false;
             }
         }
 
-        window.createGame = function() {
+        function publishGameState() {
+            renderGameState();
+            if (ablyChannel) {
+                ablyChannel.publish('gameState', gameState);
+            }
+        }
+
+        function renderGameState() {
+            const statusBadge = document.getElementById('displayGameStatus');
+            const codeDisplay = document.getElementById('displayGameCode');
+            const listContainer = document.getElementById('playersListContainer');
+            const countBadge = document.getElementById('playerCountBadge');
+
+            if (codeDisplay) codeDisplay.innerText = currentGameCode || 'SOLO';
+            if (statusBadge) statusBadge.innerText = gameState.status.toUpperCase();
+
+            // Sync settings inputs for non-hosts
+            if (!isHost) {
+                document.getElementById('configStartPage').value = gameState.startPage || 'Dog';
+                document.getElementById('configTargetPage').value = gameState.targetPage || 'Cat';
+                document.getElementById('configAllowFind').checked = gameState.allowFind !== false;
+                document.getElementById('hostControls').classList.add('hidden');
+            } else if (gameState.status === 'lobby') {
+                document.getElementById('hostControls').classList.remove('hidden');
+            }
+
+            // Render player list / leaderboard
+            if (listContainer) {
+                listContainer.innerHTML = '';
+                const playersArray = Object.keys(gameState.players || {}).map(id => ({
+                    id,
+                    ...gameState.players[id]
+                }));
+
+                countBadge.innerText = `${playersArray.length} ${playersArray.length === 1 ? 'racer' : 'racers'}`;
+
+                playersArray.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-2.5 rounded bg-[#f7f7f6] border border-[#e5e5e3] text-xs";
+                    
+                    const isSelf = p.id === clientId;
+                    const hostLabel = p.isHost ? '<span class="text-[9px] bg-[#121212] text-white px-1.5 py-0.5 rounded uppercase font-chivo font-bold ml-1">Host</span>' : '';
+                    const lastPage = p.path && p.path.length > 0 ? p.path[p.path.length - 1] : (gameState.startPage || 'Dog');
+                    
+                    div.innerHTML = `
+                        <div class="flex flex-col truncate max-w-[170px]">
+                            <div class="flex items-center space-x-1 font-bold text-[#121212]">
+                                <span class="truncate">${p.name || 'Racer'} ${isSelf ? '(You)' : ''}</span>
+                                ${hostLabel}
+                            </div>
+                            <span class="text-[10px] text-[#767673] truncate font-serif">Page: ${lastPage}</span>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="font-mono font-bold text-[#121212] block">${p.clicks || 0} clicks</span>
+                            <span class="text-[9px] uppercase font-chivo font-bold ${p.status === 'finished' ? 'text-green-600' : 'text-blue-600'}">${p.status || 'Lobby'}</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(div);
+                });
+            }
+        }
+
+        function createGame() {
             const nickname = document.getElementById('playerNicknameInput').value.trim() || "Racer";
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             currentGameCode = code;
             isHost = true;
 
-            if (!initAbly(code)) return;
+            initAbly(code);
 
             gameState = {
                 status: 'lobby',
-                startPage: 'Dog',
-                targetPage: 'Cat',
+                startPage: document.getElementById('configStartPage').value.trim() || 'Dog',
+                targetPage: document.getElementById('configTargetPage').value.trim() || 'Cat',
+                allowFind: document.getElementById('configAllowFind').checked,
                 players: {
                     [clientId]: { name: nickname, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
                 },
@@ -408,134 +615,124 @@
 
             publishGameState();
             enterActiveLobbyView();
-            showNotification("Game created! Code: " + code);
-        };
+            showNotification("Multiplayer Room Created: " + code);
+        }
+        window.createGame = createGame;
 
-        window.joinGame = function() {
+        function joinGame() {
             const nickname = document.getElementById('playerNicknameInput').value.trim() || "Racer";
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
             if (!code) {
-                showNotification("Please enter a valid game code.");
+                showNotification("Please enter a room code.");
                 return;
             }
             currentGameCode = code;
             isHost = false;
 
-            if (!initAbly(code)) return;
+            initAbly(code);
 
             setTimeout(() => {
                 if (!gameState.players) gameState.players = {};
                 gameState.players[clientId] = { name: nickname, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
+                ablyChannel.publish('requestState', {});
                 publishGameState();
                 enterActiveLobbyView();
-                showNotification("Joined lobby: " + code);
-            }, 500);
-        };
+                showNotification("Joined Room: " + code);
+            }, 400);
+        }
+        window.joinGame = joinGame;
 
-        window.leaveGame = function() {
-            if (ablyClient) {
-                ablyClient.close();
-                ablyClient = null;
+        function leaveGame() {
+            if (gameState.players && gameState.players[clientId]) {
+                delete gameState.players[clientId];
+                publishGameState();
             }
             currentGameCode = null;
-            isHost = false;
+            isHost = true;
             document.getElementById('lobbyLanding').classList.remove('hidden');
             document.getElementById('activeLobby').classList.add('hidden');
             document.getElementById('readerWelcomeState').classList.remove('hidden');
             document.getElementById('wikiScrollContainer').classList.add('hidden');
-            document.getElementById('gameStatusBar').classList.remove('flex');
             document.getElementById('gameStatusBar').classList.add('hidden');
             stopTimer();
-            showNotification("Left the game.");
-        };
+            showNotification("Left room.");
+        }
+        window.leaveGame = leaveGame;
 
-        function enterActiveLobbyView() {
-            document.getElementById('lobbyLanding').classList.add('hidden');
-            document.getElementById('activeLobby').classList.remove('hidden');
-            document.getElementById('displayGameCode').innerText = currentGameCode;
-            if (isHost) {
-                document.getElementById('hostControls').classList.remove('hidden');
-                document.getElementById('hostAbilitiesPanel').classList.remove('hidden');
-            } else {
-                document.getElementById('hostControls').classList.add('hidden');
-                document.getElementById('hostAbilitiesPanel').classList.add('hidden');
+        async function shuffleStartPage() {
+            try {
+                const res = await fetch('https://en.wikipedia.org/w/api.php?action=query&generator=random&grnnamespace=0&grnlimit=1&prop=info&format=json&origin=*');
+                const data = await res.json();
+                const pages = data.query.pages;
+                const randomTitle = pages[Object.keys(pages)[0]].title;
+                document.getElementById('configStartPage').value = randomTitle;
+                gameState.startPage = randomTitle;
+                publishGameState();
+            } catch (e) {
+                const fallbacks = ["Dog", "Moon", "Pizza", "Computer", "Eiffel Tower", "Pyramid"];
+                const pick = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                document.getElementById('configStartPage').value = pick;
             }
-            renderGameState();
         }
+        window.shuffleStartPage = shuffleStartPage;
 
-        function publishGameState() {
-            if (!ablyChannel) return;
-            ablyChannel.publish('gameState', gameState);
+        async function shuffleTargetPage() {
+            try {
+                const res = await fetch('https://en.wikipedia.org/w/api.php?action=query&generator=random&grnnamespace=0&grnlimit=1&prop=info&format=json&origin=*');
+                const data = await res.json();
+                const pages = data.query.pages;
+                const randomTitle = pages[Object.keys(pages)[0]].title;
+                document.getElementById('configTargetPage').value = randomTitle;
+                gameState.targetPage = randomTitle;
+                publishGameState();
+            } catch (e) {
+                const fallbacks = ["Cat", "Mars", "Sushi", "Internet", "Statue of Liberty", "Guitar"];
+                const pick = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+                document.getElementById('configTargetPage').value = pick;
+            }
         }
+        window.shuffleTargetPage = shuffleTargetPage;
 
-        window.loadPresetFile = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.startPage) {
-                        document.getElementById('configStartPage').value = data.startPage;
-                        gameState.startPage = data.startPage;
-                    }
-                    if (data.targetPage) {
-                        document.getElementById('configTargetPage').value = data.targetPage;
-                        gameState.targetPage = data.targetPage;
+        function startGame() {
+            if (isHost) {
+                const startInput = document.getElementById('configStartPage');
+                const targetInput = document.getElementById('configTargetPage');
+                const findInput = document.getElementById('configAllowFind');
+                if (startInput) gameState.startPage = startInput.value.trim() || 'Dog';
+                if (targetInput) gameState.targetPage = targetInput.value.trim() || 'Cat';
+                if (findInput) gameState.allowFind = findInput.checked;
+            }
+            gameState.status = 'countdown';
+            publishGameState();
+
+            if (!ablyChannel) {
+                runCountdownAndStart();
+            }
+        }
+        window.startGame = startGame;
+
+        function runCountdownAndStart() {
+            const overlay = document.getElementById('countdownOverlay');
+            const numEl = document.getElementById('countdownNumber');
+            overlay.classList.remove('hidden');
+            let count = 3;
+            numEl.innerText = count;
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    numEl.innerText = count;
+                } else {
+                    clearInterval(interval);
+                    overlay.classList.add('hidden');
+                    gameState.status = 'racing';
+                    if (gameState.players[clientId]) {
+                        gameState.players[clientId].status = 'racing';
                     }
                     publishGameState();
-                    showNotification("Preset loaded successfully!");
-                } catch (err) {
-                    showNotification("Invalid JSON preset file.");
-                }
-            };
-            reader.readAsText(file);
-        };
-
-        window.startGame = function() {
-            if (!isHost) return;
-            const start = document.getElementById('configStartPage').value.trim() || "Dog";
-            const target = document.getElementById('configTargetPage').value.trim() || "Cat";
-
-            gameState.status = 'playing';
-            gameState.startPage = start;
-            gameState.targetPage = target;
-
-            for (let id in gameState.players) {
-                gameState.players[id].status = 'racing';
-                gameState.players[id].path = [];
-                gameState.players[id].clicks = 0;
-                gameState.players[id].time = 0;
-            }
-
-            publishGameState();
-            beginRaceForSelf();
-        };
-
-        function renderGameState() {
-            document.getElementById('displayGameStatus').innerText = gameState.status.toUpperCase();
-            
-            const container = document.getElementById('playersListContainer');
-            container.innerHTML = '';
-            for (let id in gameState.players) {
-                const p = gameState.players[id];
-                const div = document.createElement('div');
-                div.className = "flex items-center justify-between bg-white p-2.5 rounded border border-[#e5e5e3] text-xs";
-                div.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <span class="font-bold text-[#121212]">${p.name} ${id === clientId ? '(You)' : ''}</span>
-                        ${p.isHost ? '<span class="text-[9px] bg-[#f1f1f0] text-[#767673] px-1.5 py-0.5 rounded font-chivo">HOST</span>' : ''}
-                    </div>
-                    <span class="font-chivo text-[11px] text-[#767673] uppercase">${p.status}</span>
-                `;
-                container.appendChild(div);
-            }
-
-            if (gameState.status === 'playing' && document.getElementById('readerWelcomeState').classList.contains('hidden') === false) {
-                if (!currentArticleTitle) {
                     beginRaceForSelf();
                 }
-            }
+            }, 900);
         }
 
         function beginRaceForSelf() {
@@ -544,26 +741,78 @@
             document.getElementById('gameStatusBar').classList.add('flex');
             document.getElementById('targetArticleDisplay').innerText = gameState.targetPage;
             
+            // Reset Target Preview state for new match
+            hasUsedPreview = false;
+            const previewBtn = document.getElementById('previewTargetBtn');
+            previewBtn.disabled = false;
+            previewBtn.className = "ml-1 md:ml-2 px-2.5 py-1 bg-[#121212] hover:bg-[#333333] text-white text-[10px] font-chivo uppercase tracking-wider font-bold rounded-full transition-all shadow-sm flex items-center space-x-1 cursor-pointer";
+            previewBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span class="hidden sm:inline">Peek Target (10s)</span>
+                <span class="sm:hidden">Peek</span>
+            `;
+
+            currentClickPath = [];
             startTimer();
+
+            // Pre-fetch target page in background for instant win checks & instant preview
+            fetchWithRedirectResolution(gameState.targetPage).catch(() => {});
+
             loadWikiPage(gameState.startPage);
         }
 
+        // Optimized Wikipedia fetcher with auto-redirect resolution and in-memory caching
         async function fetchWithRedirectResolution(title) {
-            try {
-                const apiURL = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&format=json&origin=*`;
-                const res = await fetch(apiURL);
-                const data = await res.json();
+            const cacheKey = title.toLowerCase().trim();
+            if (pageCache.has(cacheKey)) {
+                return pageCache.get(cacheKey);
+            }
 
-                if (data.error) {
-                    throw new Error(data.error.info || "Article not found");
+            const apiURL = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&redirects=1&prop=text|title&disableeditsection=1&disabletoc=1&format=json&origin=*`;
+            const res = await fetch(apiURL);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.info);
+
+            const result = { title: data.parse.title, html: data.parse.text['*'] };
+            pageCache.set(cacheKey, result);
+            pageCache.set(data.parse.title.toLowerCase().trim(), result);
+            return result;
+        }
+
+        // Sanitizer to ensure Wikipedia images and relative URLs load robustly
+        function processWikiHtml(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Remove non-essential clutter and layout-breaking components
+            doc.querySelectorAll('.mw-editsection, .reference, .navbox, .vertical-navbox, .infobox, .sistersitebox, table.ambox, .reflist, .thumbcaption, style, script, .hatnote, .mw-jump-link').forEach(el => el.remove());
+
+            // Process image tags to force valid HTTPS URLs and fallbacks
+            doc.querySelectorAll('img').forEach(img => {
+                let src = img.getAttribute('src');
+                const dataSrc = img.getAttribute('data-src');
+
+                if (dataSrc) {
+                    src = dataSrc;
                 }
 
-                const parsedTitle = data.parse.title;
-                return { title: parsedTitle, html: data.parse.text['*'] };
-            } catch (err) {
-                console.error("Wiki fetch error:", err);
-                throw err;
-            }
+                if (src) {
+                    if (src.startsWith('//')) {
+                        src = 'https:' + src;
+                    } else if (src.startsWith('/')) {
+                        src = 'https://en.wikipedia.org' + src;
+                    }
+                    img.setAttribute('src', src);
+                    img.removeAttribute('srcset'); // Clear srcset to prevent broken relative URL resolution
+                    img.className = 'my-4 rounded max-w-full h-auto mx-auto border border-[#e5e5e3] shadow-sm block';
+                    img.setAttribute('onerror', "this.style.display='none';"); // Hide broken images cleanly
+                }
+            });
+
+            return doc;
         }
 
         async function loadWikiPage(title) {
@@ -587,34 +836,23 @@
 
                 document.getElementById('clickCountDisplay').innerText = Math.max(0, currentClickPath.length - 1);
 
+                // Check win condition
                 if (resolved.title.toLowerCase() === gameState.targetPage.toLowerCase()) {
                     handlePlayerWon();
                 }
 
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(resolved.html, 'text/html');
+                const doc = processWikiHtml(resolved.html);
 
-                doc.querySelectorAll('.mw-editsection, .reference, .navbox, .vertical-navbox, .infobox, .sistersitebox, table.ambox').forEach(el => el.remove());
-
-                doc.querySelectorAll('img').forEach(img => {
-                    let src = img.getAttribute('src');
-                    if (src) {
-                        if (src.startsWith('//')) src = 'https:' + src;
-                        img.setAttribute('src', src);
-                        img.className = 'my-4 rounded max-w-full h-auto mx-auto border border-[#e5e5e3]';
-                    }
-                });
-
+                // Re-link valid internal Wikipedia article links
                 doc.querySelectorAll('a').forEach(a => {
                     const href = a.getAttribute('href');
                     if (href && href.startsWith('/wiki/') && !href.includes(':')) {
-                        const targetTitle = decodeURIComponent(href.replace('/wiki/', ''));
-                        a.removeAttribute('href');
-                        a.className = 'text-[#1a0dab] underline hover:text-[#000000] cursor-pointer font-medium';
-                        a.onclick = (e) => {
-                            e.preventDefault();
-                            loadWikiPage(targetTitle);
-                        };
+                        const targetTitle = decodeURIComponent(href.replace('/wiki/', '').split('#')[0]);
+                        if (targetTitle) {
+                            a.setAttribute('data-wiki-link', targetTitle);
+                            a.setAttribute('href', 'javascript:void(0)');
+                            a.className = 'text-[#1a0dab] underline hover:text-[#000000] cursor-pointer font-medium transition-colors';
+                        }
                     } else {
                         a.removeAttribute('href');
                         a.style.color = 'inherit';
@@ -646,6 +884,116 @@
             }
         }
 
+        // Target Article Quick Preview (10 Seconds, Single-Use per race)
+        async function openTargetPreview() {
+            if (hasUsedPreview) {
+                showNotification("Target preview can only be used once per race.");
+                return;
+            }
+
+            hasUsedPreview = true;
+            const previewBtn = document.getElementById('previewTargetBtn');
+            previewBtn.disabled = true;
+            previewBtn.className = "ml-1 md:ml-2 px-2.5 py-1 bg-[#d3d3d1] text-[#767673] text-[10px] font-chivo uppercase tracking-wider font-bold rounded-full cursor-not-allowed opacity-70 flex items-center space-x-1";
+            previewBtn.innerHTML = `<span>Peek Used</span>`;
+
+            const modal = document.getElementById('targetPreviewModal');
+            const titleEl = document.getElementById('previewModalTitle');
+            const contentEl = document.getElementById('previewModalContent');
+            const countdownEl = document.getElementById('previewCountdownDisplay');
+            const progressBar = document.getElementById('previewProgressBar');
+
+            titleEl.innerText = `Target Preview: ${gameState.targetPage}`;
+            contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#767673]">Loading target preview...</div>`;
+            modal.classList.remove('hidden');
+
+            try {
+                const resolved = await fetchWithRedirectResolution(gameState.targetPage);
+                const doc = processWikiHtml(resolved.html);
+                
+                // Disable all links inside target preview
+                doc.querySelectorAll('a').forEach(a => {
+                    a.removeAttribute('href');
+                    a.style.color = 'inherit';
+                    a.style.pointerEvents = 'none';
+                    a.style.textDecoration = 'none';
+                });
+
+                contentEl.innerHTML = `
+                    <div class="border-b border-[#e5e5e3] pb-3 mb-4">
+                        <span class="text-[10px] font-chivo text-[#767673] uppercase tracking-widest">Target Article</span>
+                        <h2 class="font-serif text-2xl font-bold text-[#121212]">${resolved.title}</h2>
+                    </div>
+                ` + doc.body.innerHTML;
+            } catch (err) {
+                contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#c53030]">Failed to load preview for target article.</div>`;
+            }
+
+            // Start 10-second countdown
+            let secondsLeft = 10;
+            countdownEl.innerText = `${secondsLeft}s`;
+            progressBar.style.width = '100%';
+
+            if (previewTimerInterval) clearInterval(previewTimerInterval);
+            previewTimerInterval = setInterval(() => {
+                secondsLeft--;
+                countdownEl.innerText = `${secondsLeft}s`;
+                progressBar.style.width = `${(secondsLeft / 10) * 100}%`;
+
+                if (secondsLeft <= 0) {
+                    closeTargetPreview();
+                }
+            }, 1000);
+        }
+        window.openTargetPreview = openTargetPreview;
+
+        function closeTargetPreview() {
+            if (previewTimerInterval) {
+                clearInterval(previewTimerInterval);
+                previewTimerInterval = null;
+            }
+            document.getElementById('targetPreviewModal').classList.add('hidden');
+        }
+        window.closeTargetPreview = closeTargetPreview;
+
+        // Delegated event listener for article links with instant hover prefetching
+        const wikiContent = document.getElementById('wikiContent');
+        
+        wikiContent.addEventListener('mouseover', (e) => {
+            const link = e.target.closest('a[data-wiki-link]');
+            if (link) {
+                const targetTitle = link.getAttribute('data-wiki-link');
+                if (targetTitle) {
+                    clearTimeout(hoverPrefetchTimer);
+                    hoverPrefetchTimer = setTimeout(() => {
+                        fetchWithRedirectResolution(targetTitle).catch(() => {});
+                    }, 50);
+                }
+            }
+        });
+
+        wikiContent.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-wiki-link]');
+            if (link) {
+                e.preventDefault();
+                const targetTitle = link.getAttribute('data-wiki-link');
+                if (targetTitle) {
+                    loadWikiPage(targetTitle);
+                }
+            }
+        });
+
+        // Keydown listener for Ctrl+F enforcement & ESC for modals
+        window.addEventListener('keydown', (e) => {
+            if (!gameState.allowFind && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                e.preventDefault();
+                showNotification("Find (Ctrl+F) has been disabled for this match!");
+            }
+            if (e.key === 'Escape') {
+                closeTargetPreview();
+            }
+        });
+
         function startTimer() {
             startTime = Date.now();
             if (timerInterval) clearInterval(timerInterval);
@@ -670,17 +1018,27 @@
         function handlePlayerWon() {
             stopTimer();
             gameState.status = 'finished';
+            if (gameState.players[clientId]) {
+                gameState.players[clientId].status = 'finished';
+            }
             publishGameState();
-            showResultsModal(clientId);
+            showResultsModal();
         }
 
-        function showResultsModal(winnerId) {
+        function showResultsModal() {
             const modal = document.getElementById('resultsModal');
             const titleEl = document.getElementById('modalWinnerTitle');
             const listEl = document.getElementById('resultsListContainer');
 
-            const winner = gameState.players[winnerId] || { name: "Someone" };
-            titleEl.innerText = `Winner: ${winner.name}!`;
+            // Find winner
+            let winnerName = "Someone";
+            for (let id in gameState.players) {
+                if (gameState.players[id].status === 'finished') {
+                    winnerName = gameState.players[id].name;
+                    break;
+                }
+            }
+            titleEl.innerText = `Winner: ${winnerName}!`;
 
             listEl.innerHTML = '';
             for (let id in gameState.players) {
@@ -694,7 +1052,7 @@
 
                 div.innerHTML = `
                     <div class="flex items-center justify-between font-bold text-[#121212]">
-                        <span>${p.name}</span>
+                        <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
                         <span class="text-[#767673] font-chivo font-normal">${p.clicks || 0} clicks | Time: ${min}:${sec}</span>
                     </div>
                     <div class="text-[11px] text-[#555552] font-serif bg-white p-2.5 rounded border border-[#e5e5e3] overflow-x-auto whitespace-nowrap">
@@ -707,52 +1065,40 @@
             modal.classList.remove('hidden');
         }
 
-        window.closeResultsModal = function() {
+        function closeResultsModal() {
             document.getElementById('resultsModal').classList.add('hidden');
-            leaveGame();
-        };
-
-        window.triggerAbility = function(type) {
-            if (!isHost || !ablyChannel) return;
-            ablyChannel.publish('ability', type);
-            showNotification(`Triggered ability: ${type.toUpperCase()}`);
-        };
-
-        function triggerBlindEffect() {
-            const overlay = document.getElementById('blindOverlay');
-            overlay.classList.remove('opacity-0', 'pointer-events-none');
-            overlay.classList.add('opacity-100');
-            setTimeout(() => {
-                overlay.classList.remove('opacity-100');
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
+            if (isHost) {
+                document.getElementById('hostControls').classList.remove('hidden');
+            }
+            gameState.status = 'lobby';
+            publishGameState();
         }
+        window.closeResultsModal = closeResultsModal;
 
-        function triggerScrambleEffect() {
-            const content = document.getElementById('wikiContent');
-            content.style.filter = 'blur(4px)';
-            setTimeout(() => {
-                content.style.filter = 'none';
-            }, 4000);
-            showNotification("Screen scrambled/blurred by host!");
-        }
-
-        window.sendChatMessage = function() {
+        function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (!text || !ablyChannel) return;
+            if (!text) return;
 
             const nickname = gameState.players[clientId]?.name || "Racer";
             const chatMsg = { sender: nickname, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             
-            ablyChannel.publish('chatMessage', chatMsg);
+            if (ablyChannel) {
+                ablyChannel.publish('chatMessage', chatMsg);
+            } else {
+                if (!gameState.chat) gameState.chat = [];
+                gameState.chat.push(chatMsg);
+                renderChat();
+            }
             input.value = '';
-        };
+        }
+        window.sendChatMessage = sendChatMessage;
 
         function renderChat() {
             const container = document.getElementById('chatMessagesContainer');
+            if (!container) return;
             container.innerHTML = '';
-            gameState.chat.forEach(msg => {
+            (gameState.chat || []).forEach(msg => {
                 const div = document.createElement('div');
                 div.className = "space-y-0.5";
                 div.innerHTML = `
@@ -760,7 +1106,7 @@
                         <span class="font-bold text-[#121212]">${msg.sender}</span>
                         <span>${msg.time}</span>
                     </div>
-                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded">${msg.text}</p>
+                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded border border-[#e5e5e3]">${msg.text}</p>
                 `;
                 container.appendChild(div);
             });
