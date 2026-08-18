@@ -50,6 +50,7 @@
             border-bottom: 1px solid #e5e5e3;
             color: #121212;
             clear: both;
+            scroll-margin-top: 2rem;
         }
         #wikiContent h3 {
             font-family: 'Libre Baskerville', serif;
@@ -58,6 +59,7 @@
             margin-top: 1.5rem;
             margin-bottom: 0.5rem;
             color: #222;
+            scroll-margin-top: 2rem;
         }
         #wikiContent ul, #wikiContent ol {
             margin-left: 1.5rem;
@@ -186,6 +188,21 @@
                     </div>
 
                     <div class="space-y-3 pt-2">
+                        <!-- Profile Avatar Upload Block -->
+                        <div>
+                            <label class="block text-[11px] font-chivo uppercase tracking-wider text-[#767673] mb-1">Profile Picture</label>
+                            <div class="flex items-center space-x-3">
+                                <div id="avatarPreviewContainer" class="w-10 h-10 rounded-full bg-[#e5e5e3] border border-[#d3d3d1] flex items-center justify-center overflow-hidden shrink-0">
+                                    <span id="avatarInitials" class="font-bold text-xs text-[#767673]">?</span>
+                                    <img id="avatarImage" class="w-full h-full object-cover hidden" alt="Avatar">
+                                </div>
+                                <label class="flex-1 bg-[#f1f1f0] hover:bg-[#e5e5e3] text-[#121212] border border-[#d3d3d1] px-3 py-1.5 rounded text-xs text-center cursor-pointer font-medium transition-colors">
+                                    Upload Photo
+                                    <input type="file" id="playerAvatarInput" accept="image/*" onchange="handleAvatarUpload(event)" class="hidden">
+                                </label>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-[11px] font-chivo uppercase tracking-wider text-[#767673] mb-1">Your Nickname</label>
                             <input type="text" id="playerNicknameInput" onchange="updateNickname()" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] focus:outline-none focus:border-[#121212]" placeholder="Enter nickname">
@@ -307,6 +324,16 @@
         <!-- Wikipedia Reader Viewport -->
         <main class="flex-1 flex flex-col bg-[#ffffff] relative overflow-hidden">
             
+            <!-- Floating Safety Back Button for Stuck Articles -->
+            <div id="safetyBackButtonContainer" class="hidden absolute top-4 left-4 z-40">
+                <button onclick="popSafetyBack()" class="bg-[#c53030] hover:bg-[#9b2c2c] text-white px-3.5 py-2 rounded-lg font-chivo text-xs font-bold uppercase tracking-wider shadow-md flex items-center space-x-1.5 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span>Back to Safety</span>
+                </button>
+            </div>
+
             <!-- Countdown Overlay -->
             <div id="countdownOverlay" class="absolute inset-0 bg-black/70 z-50 hidden flex flex-col items-center justify-center text-white space-y-4">
                 <span class="text-xs font-chivo uppercase tracking-widest text-[#d3d3d1]">Get Ready to Race...</span>
@@ -433,6 +460,7 @@
         let clientId = 'user_' + Math.random().toString(36).substring(2, 8);
         let currentGameCode = null;
         let isHost = true;
+        let currentUserAvatar = null;
 
         let gameState = {
             status: 'lobby',
@@ -474,11 +502,14 @@
             document.getElementById('currentUserDisplay').innerText = `ID: ${clientId.substring(0, 6)}`;
             
             // Set initial nickname
-            document.getElementById('playerNicknameInput').value = "Racer_" + Math.floor(Math.random() * 900 + 100);
+            const initName = "Racer_" + Math.floor(Math.random() * 900 + 100);
+            document.getElementById('playerNicknameInput').value = initName;
+            document.getElementById('avatarInitials').innerText = initName.charAt(0).toUpperCase();
 
             // Initialize local player state
             gameState.players[clientId] = {
-                name: document.getElementById('playerNicknameInput').value,
+                name: initName,
+                avatar: currentUserAvatar,
                 isHost: true,
                 status: 'lobby',
                 path: [],
@@ -489,6 +520,38 @@
 
         // Initialize connection on load
         initCloudSync();
+
+        // Handle profile image file upload
+        window.handleAvatarUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Compress image canvas to dataURL to optimize realtime payload size
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 80;
+                    canvas.height = 80;
+                    ctx.drawImage(img, 0, 0, 80, 80);
+                    currentUserAvatar = canvas.toDataURL('image/jpeg', 0.8);
+
+                    document.getElementById('avatarImage').src = currentUserAvatar;
+                    document.getElementById('avatarImage').classList.remove('hidden');
+                    document.getElementById('avatarInitials').classList.add('hidden');
+
+                    if (gameState.players[clientId]) {
+                        gameState.players[clientId].avatar = currentUserAvatar;
+                        publishGameState();
+                    }
+                    showNotification("Profile picture updated!");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
         // Sidebar Responsive Toggle
         const sidebar = document.getElementById('sidebar');
@@ -536,6 +599,9 @@
             const val = document.getElementById('playerNicknameInput').value.trim();
             if (val && gameState.players[clientId]) {
                 gameState.players[clientId].name = val;
+                if (!currentUserAvatar) {
+                    document.getElementById('avatarInitials').innerText = val.charAt(0).toUpperCase();
+                }
                 publishGameState();
             }
         };
@@ -646,13 +712,20 @@
                     const hostLabel = p.isHost ? '<span class="text-[9px] bg-[#121212] text-white px-1.5 py-0.5 rounded uppercase font-chivo font-bold ml-1">Host</span>' : '';
                     const lastPage = p.path && p.path.length > 0 ? p.path[p.path.length - 1] : (gameState.startPage || 'Dog');
                     
+                    const avatarHtml = p.avatar 
+                        ? `<img src="${p.avatar}" class="w-6 h-6 rounded-full object-cover shrink-0 border border-[#d3d3d1]">`
+                        : `<div class="w-6 h-6 rounded-full bg-[#d3d3d1] font-bold text-[10px] text-[#555] flex items-center justify-center shrink-0">${(p.name || 'R').charAt(0).toUpperCase()}</div>`;
+
                     div.innerHTML = `
-                        <div class="flex flex-col truncate max-w-[170px]">
-                            <div class="flex items-center space-x-1 font-bold text-[#121212]">
-                                <span class="truncate">${p.name || 'Racer'} ${isSelf ? '(You)' : ''}</span>
-                                ${hostLabel}
+                        <div class="flex items-center space-x-2 truncate max-w-[170px]">
+                            ${avatarHtml}
+                            <div class="flex flex-col truncate">
+                                <div class="flex items-center space-x-1 font-bold text-[#121212]">
+                                    <span class="truncate">${p.name || 'Racer'} ${isSelf ? '(You)' : ''}</span>
+                                    ${hostLabel}
+                                </div>
+                                <span class="text-[10px] text-[#767673] truncate font-serif">Page: ${lastPage}</span>
                             </div>
-                            <span class="text-[10px] text-[#767673] truncate font-serif">Page: ${lastPage}</span>
                         </div>
                         <div class="text-right shrink-0">
                             <span class="font-mono font-bold text-[#121212] block">${p.clicks || 0} clicks</span>
@@ -677,7 +750,7 @@
                 hardMode: document.getElementById('configHardMode').checked,
                 allowFind: document.getElementById('configAllowFind').checked,
                 players: {
-                    [clientId]: { name: nickname, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
+                    [clientId]: { name: nickname, avatar: currentUserAvatar, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
                 },
                 chat: []
             };
@@ -699,7 +772,7 @@
             currentGameCode = code;
             isHost = false;
 
-            gameState.players[clientId] = { name: nickname, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
+            gameState.players[clientId] = { name: nickname, avatar: currentUserAvatar, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
 
             subscribeToRoom(code);
             await publishGameState();
@@ -724,6 +797,7 @@
             document.getElementById('readerWelcomeState').classList.remove('hidden');
             document.getElementById('wikiScrollContainer').classList.add('hidden');
             document.getElementById('gameStatusBar').classList.add('hidden');
+            document.getElementById('safetyBackButtonContainer').classList.add('hidden');
             stopTimer();
             showNotification("Left room.");
         }
@@ -849,7 +923,6 @@
                 return pageCache.get(cacheKey);
             }
 
-            // Fixed: disabletoc set to 0 to keep Table of Contents enabled for Easy Mode
             const apiURL = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&redirects=1&prop=text|title&disableeditsection=1&disabletoc=0&format=json&origin=*`;
             const res = await fetch(apiURL);
             const data = await res.json();
@@ -907,13 +980,26 @@
             return doc;
         }
 
+        // Handle Safety Back Button functionality when getting stuck
+        window.popSafetyBack = function() {
+            if (currentClickPath.length > 1) {
+                currentClickPath.pop(); // Remove stuck page
+                const prevPage = currentClickPath.pop(); // Retrieve previous valid page
+                loadWikiPage(prevPage);
+            } else {
+                loadWikiPage(gameState.startPage);
+            }
+        };
+
         async function loadWikiPage(title) {
             const loadingState = document.getElementById('readerLoadingState');
             const scrollContainer = document.getElementById('wikiScrollContainer');
             const contentDiv = document.getElementById('wikiContent');
+            const safetyBtn = document.getElementById('safetyBackButtonContainer');
 
             loadingState.classList.remove('hidden');
             scrollContainer.classList.add('hidden');
+            safetyBtn.classList.add('hidden');
 
             try {
                 const resolved = await fetchWithRedirectResolution(title);
@@ -922,7 +1008,7 @@
                 currentClickPath.push(resolved.title);
                 if (gameState.players[clientId]) {
                     gameState.players[clientId].path = currentClickPath;
-                    gameState.players[clientId].clicks = currentClickPath.length - 1;
+                    gameState.players[clientId].clicks = Math.max(0, currentClickPath.length - 1);
                     publishGameState();
                 }
 
@@ -935,16 +1021,29 @@
 
                 const doc = processWikiHtml(resolved.html, gameState.hardMode);
 
-                // Re-link valid internal Wikipedia article links
+                // Link handler: Supports internal articles, anchor TOC links, and external links
                 doc.querySelectorAll('a').forEach(a => {
                     const href = a.getAttribute('href');
-                    if (href && href.startsWith('/wiki/') && !href.includes(':')) {
+                    if (!href) return;
+
+                    if (href.startsWith('#')) {
+                        // Easy Mode TOC Anchor links
+                        a.setAttribute('data-anchor-link', href.substring(1));
+                        a.setAttribute('href', 'javascript:void(0)');
+                        a.className = 'text-[#1a0dab] hover:underline cursor-pointer font-medium';
+                    } else if (href.startsWith('/wiki/') && !href.includes(':')) {
+                        // Valid internal Wikipedia article link
                         const targetTitle = decodeURIComponent(href.replace('/wiki/', '').split('#')[0]);
                         if (targetTitle) {
                             a.setAttribute('data-wiki-link', targetTitle);
                             a.setAttribute('href', 'javascript:void(0)');
                             a.className = 'text-[#1a0dab] underline hover:text-[#000000] cursor-pointer font-medium transition-colors';
                         }
+                    } else if (href.startsWith('http://') || href.startsWith('https://')) {
+                        // Safe external links
+                        a.setAttribute('target', '_blank');
+                        a.setAttribute('rel', 'noopener noreferrer');
+                        a.className = 'text-[#1a0dab] underline hover:text-[#000000] cursor-pointer font-medium transition-colors';
                     } else {
                         a.removeAttribute('href');
                         a.style.color = 'inherit';
@@ -967,10 +1066,18 @@
             } catch (err) {
                 loadingState.classList.add('hidden');
                 scrollContainer.classList.remove('hidden');
+                safetyBtn.classList.remove('hidden'); // Display safety back button on failure
+
                 contentDiv.innerHTML = `
-                    <div class="text-center py-12 space-y-3">
-                        <h2 class="font-serif font-bold text-xl text-[#c53030]">Unable to load article</h2>
-                        <p class="text-xs text-[#767673]">Could not retrieve "${title}". Try clicking another link.</p>
+                    <div class="text-center py-12 space-y-4">
+                        <h2 class="font-serif font-bold text-xl text-[#c53030]">Could not load article</h2>
+                        <p class="text-xs text-[#767673]">Could not retrieve "${title}". Click the button below to return to your previous article safely.</p>
+                        <button onclick="popSafetyBack()" class="bg-[#121212] hover:bg-[#333333] text-white px-5 py-2.5 rounded text-xs font-chivo font-bold uppercase tracking-wider inline-flex items-center space-x-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>Back to Safety</span>
+                        </button>
                     </div>
                 `;
             }
@@ -1048,7 +1155,7 @@
         }
         window.closeTargetPreview = closeTargetPreview;
 
-        // Delegated event listener for article links with instant hover prefetching
+        // Delegated event listener for article links with instant hover prefetching & anchor handling
         const wikiContent = document.getElementById('wikiContent');
         
         wikiContent.addEventListener('mouseover', (e) => {
@@ -1065,12 +1172,21 @@
         });
 
         wikiContent.addEventListener('click', (e) => {
-            const link = e.target.closest('a[data-wiki-link]');
-            if (link) {
+            const wikiLink = e.target.closest('a[data-wiki-link]');
+            const anchorLink = e.target.closest('a[data-anchor-link]');
+
+            if (wikiLink) {
                 e.preventDefault();
-                const targetTitle = link.getAttribute('data-wiki-link');
+                const targetTitle = wikiLink.getAttribute('data-wiki-link');
                 if (targetTitle) {
                     loadWikiPage(targetTitle);
+                }
+            } else if (anchorLink) {
+                e.preventDefault();
+                const targetId = anchorLink.getAttribute('data-anchor-link');
+                const targetElem = document.getElementById(targetId) || document.getElementById(decodeURIComponent(targetId));
+                if (targetElem) {
+                    targetElem.scrollIntoView({ behavior: 'smooth' });
                 }
             }
         });
@@ -1141,9 +1257,16 @@
                 const min = String(Math.floor((p.time || 0) / 60)).padStart(2, '0');
                 const sec = String((p.time || 0) % 60).padStart(2, '0');
 
+                const avatarHtml = p.avatar 
+                    ? `<img src="${p.avatar}" class="w-6 h-6 rounded-full object-cover shrink-0 border border-[#d3d3d1]">`
+                    : `<div class="w-6 h-6 rounded-full bg-[#d3d3d1] font-bold text-[10px] text-[#555] flex items-center justify-center shrink-0">${(p.name || 'R').charAt(0).toUpperCase()}</div>`;
+
                 div.innerHTML = `
                     <div class="flex items-center justify-between font-bold text-[#121212]">
-                        <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
+                        <div class="flex items-center space-x-2">
+                            ${avatarHtml}
+                            <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
+                        </div>
                         <span class="text-[#767673] font-chivo font-normal">${p.clicks || 0} clicks | Time: ${min}:${sec}</span>
                     </div>
                     <div class="text-[11px] text-[#555552] font-serif bg-[#ffffff] p-2.5 rounded border border-[#e5e5e3] overflow-x-auto whitespace-nowrap">
@@ -1172,7 +1295,8 @@
             if (!text) return;
 
             const nickname = gameState.players[clientId]?.name || "Racer";
-            const chatMsg = { sender: nickname, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            const avatar = gameState.players[clientId]?.avatar || currentUserAvatar;
+            const chatMsg = { sender: nickname, avatar: avatar, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             
             if (roomChannel) {
                 roomChannel.publish('chat-message', chatMsg);
@@ -1192,13 +1316,21 @@
             container.innerHTML = '';
             (gameState.chat || []).forEach(msg => {
                 const div = document.createElement('div');
-                div.className = "space-y-0.5";
+                div.className = "space-y-1";
+
+                const avatarHtml = msg.avatar 
+                    ? `<img src="${msg.avatar}" class="w-5 h-5 rounded-full object-cover shrink-0 border border-[#d3d3d1]">`
+                    : `<div class="w-5 h-5 rounded-full bg-[#d3d3d1] font-bold text-[9px] text-[#555] flex items-center justify-center shrink-0">${(msg.sender || 'R').charAt(0).toUpperCase()}</div>`;
+
                 div.innerHTML = `
                     <div class="flex items-center justify-between text-[10px] text-[#767673] font-chivo">
-                        <span class="font-bold text-[#121212]">${msg.sender}</span>
+                        <div class="flex items-center space-x-1.5">
+                            ${avatarHtml}
+                            <span class="font-bold text-[#121212]">${msg.sender}</span>
+                        </div>
                         <span>${msg.time}</span>
                     </div>
-                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded border border-[#e5e5e3]">${msg.text}</p>
+                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded border border-[#e5e5e3] ml-6">${msg.text}</p>
                 `;
                 container.appendChild(div);
             });
