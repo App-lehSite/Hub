@@ -21,6 +21,7 @@
     --clr-clashdle: #f59e0b;
     --clr-crossword: #1a1a1a;
     --clr-spelling: #facc15;
+    --clr-wikirace: #2563eb;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -176,6 +177,7 @@
   .ic-clashdle { background-color: rgba(245, 158, 11, 0.1); color: var(--clr-clashdle); }
   .ic-crossword { background-color: rgba(18, 20, 23, 0.06); color: var(--clr-crossword); }
   .ic-spelling { background-color: rgba(250, 204, 21, 0.15); color: #a18100; }
+  .ic-wikirace { background-color: rgba(37, 99, 235, 0.1); color: var(--clr-wikirace); }
 
   .card-details {
     display: flex;
@@ -344,6 +346,28 @@
       <div class="card-details">
         <div class="card-title">The Mini Crossword</div>
         <div class="card-desc">A highly condensed, small-format version optimized for swift baseline logic testing.</div>
+      </div>
+    </a>
+
+  </div>
+
+  <h2 class="grid-section-title">Speed & Exploration</h2>
+  <div class="hub-grid">
+
+    <a class="hub-card" href="wikirace.html">
+      <div class="icon-wrapper ic-wikirace">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M3.6 9h16.8"/>
+          <path d="M3.6 15h16.8"/>
+          <path d="M11.5 3a17 17 0 0 0 0 18"/>
+          <path d="M12.5 3a17 17 0 0 1 0 18"/>
+          <path d="M16 12l4 4m0-4l-4 4" stroke-width="2.5"/>
+        </svg>
+      </div>
+      <div class="card-details">
+        <div class="card-title">Wiki Race</div>
+        <div class="card-desc">Navigate from a starting Wikipedia page to a target topic using the fewest internal links.</div>
       </div>
     </a>
 
