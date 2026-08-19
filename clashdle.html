@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The New York Times - Wiki Race</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ably Realtime SDK -->
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f7f6;
+            background-color: #ffffff;
             color: #121212;
         }
         .font-serif {
-            font-family: 'Libre Baskerville', serif;
+            font-family: 'Libre Baskerville', Georgia, serif;
         }
         .font-chivo {
             font-family: 'Chivo', sans-serif;
@@ -31,19 +34,18 @@
             border-radius: 3px;
         }
         
-        /* Wikipedia Layout Architecture (TOC Left, Main Center, Infobox Right) */
+        /* Modern 3-Column Wikipedia Article Layout */
         .wiki-article-grid {
             display: grid;
-            grid-template-columns: 240px minmax(0, 1fr) 300px;
-            gap: 2rem;
+            grid-template-columns: 220px minmax(0, 1fr) 300px;
+            gap: 2.5rem;
             align-items: start;
             width: 100%;
         }
 
-        /* Fallbacks for smaller screens */
         @media (max-width: 1280px) {
             .wiki-article-grid {
-                grid-template-columns: 200px minmax(0, 1fr);
+                grid-template-columns: 180px minmax(0, 1fr);
             }
             .wiki-infobox-sidebar {
                 grid-column: span 2;
@@ -58,14 +60,55 @@
             }
         }
 
-        /* Custom styling for embedded Wikipedia article contents */
-        #wikiContent p {
+        /* Wiki Left Column (Table of Contents) */
+        .wiki-toc-sidebar {
+            position: sticky;
+            top: 1rem;
+            max-height: 85vh;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .toc-header {
+            font-family: 'Chivo', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #767673;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e5e3;
+            padding-bottom: 0.25rem;
+        }
+        .toc-item {
+            display: block;
+            padding: 3px 0;
+            color: #3366cc;
+            text-decoration: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .toc-item:hover {
+            text-decoration: underline;
+        }
+        .toc-level-2 {
+            font-weight: 600;
+        }
+        .toc-level-3 {
+            padding-left: 0.75rem;
+            color: #54595d;
+            font-size: 0.8rem;
+        }
+
+        /* Article Typography & Images */
+        #wikiMainBody p {
             margin-bottom: 1.25rem;
             line-height: 1.75;
             font-size: 1.05rem;
             color: #202122;
         }
-        #wikiContent h2 {
+        #wikiMainBody h2 {
             font-family: 'Libre Baskerville', serif;
             font-weight: 700;
             font-size: 1.5rem;
@@ -76,7 +119,7 @@
             color: #000000;
             clear: both;
         }
-        #wikiContent h3 {
+        #wikiMainBody h3 {
             font-family: 'Libre Baskerville', serif;
             font-weight: 700;
             font-size: 1.2rem;
@@ -84,34 +127,27 @@
             margin-bottom: 0.5rem;
             color: #222;
         }
-        #wikiContent ul, #wikiContent ol {
+        #wikiMainBody ul, #wikiMainBody ol {
             margin-left: 1.5rem;
             margin-bottom: 1.25rem;
             list-style-type: disc;
         }
-        #wikiContent li {
+        #wikiMainBody li {
             margin-bottom: 0.35rem;
         }
-        #wikiContent figure, #wikiContent .thumb {
-            margin: 1.5rem auto;
-            max-width: 100%;
-        }
-        #wikiContent img {
+        #wikiMainBody img, .wiki-infobox-sidebar img {
             max-width: 100%;
             height: auto;
-            border-radius: 0.375rem;
-            border: 1px solid #e5e5e3;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            margin: 1rem auto;
             display: block;
+            margin: 0.5rem 0;
         }
 
-        /* Infobox styling placed in dedicated right column */
+        /* Right Infobox Formatting */
         .wiki-infobox-sidebar {
             grid-column: 3;
             grid-row: 1 / span 10;
         }
-        .wiki-infobox, table.infobox {
+        .wiki-infobox-sidebar table.infobox, .wiki-infobox-sidebar .infobox {
             width: 100% !important;
             float: none !important;
             margin: 0 !important;
@@ -119,61 +155,17 @@
             border: 1px solid #a2a9b1;
             border-radius: 0.375rem;
             padding: 0.75rem;
-            font-size: 0.85rem;
+            font-size: 0.825rem;
             line-height: 1.5;
+            border-collapse: collapse;
         }
-        .wiki-infobox th {
+        .wiki-infobox-sidebar th {
             text-align: left;
             padding: 4px 6px;
             background-color: #eaecf0;
         }
-        .wiki-infobox td {
+        .wiki-infobox-sidebar td {
             padding: 4px 6px;
-        }
-
-        /* Table of Contents styling placed in dedicated left column */
-        .wiki-toc-sidebar {
-            grid-column: 1;
-            position: sticky;
-            top: 1rem;
-            max-height: 85vh;
-            overflow-y: auto;
-        }
-        .wiki-toc, #toc, .toc {
-            background-color: #f8f9fa;
-            border: 1px solid #a2a9b1;
-            border-radius: 0.375rem;
-            padding: 1rem;
-            font-size: 0.825rem;
-            display: block !important;
-        }
-        .wiki-toc .toctitle h2, #toc .toctitle h2, .toc .toctitle h2 {
-            font-size: 0.95rem !important;
-            font-family: 'Chivo', sans-serif !important;
-            font-weight: 700 !important;
-            border-bottom: none !important;
-            margin-top: 0 !important;
-            margin-bottom: 0.5rem !important;
-            padding-bottom: 0 !important;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .wiki-toc ul, #toc ul, .toc ul {
-            list-style-type: none !important;
-            margin-left: 0.25rem !important;
-            margin-bottom: 0 !important;
-            padding-left: 0.5rem !important;
-        }
-        .wiki-toc li, #toc li, .toc li {
-            margin-bottom: 0.4rem !important;
-            line-height: 1.3 !important;
-        }
-        .wiki-toc a, #toc a, .toc a {
-            color: #3366cc !important;
-            text-decoration: none !important;
-        }
-        .wiki-toc a:hover, #toc a:hover, .toc a:hover {
-            text-decoration: underline !important;
         }
 
         .preview-progress-bar {
@@ -183,7 +175,8 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden select-none">
 
-    <header class="bg-[#ffffff] border-b border-[#e5e5e3] px-4 md:px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-30">
+    <!-- NYT Header -->
+    <header class="bg-[#ffffff] border-b border-[#e5e5e3] px-4 md:px-6 py-3 flex items-center justify-between shrink-0 z-30 shadow-sm">
         <div class="flex items-center space-x-3 md:space-x-4">
             <button id="sidebarToggle" class="p-2 text-[#767673] hover:text-[#121212] hover:bg-[#f1f1f0] rounded transition-colors" title="Toggle Sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,10 +189,15 @@
             </div>
         </div>
 
-        <div id="gameStatusBar" class="hidden items-center space-x-3 md:space-x-6 bg-[#f7f7f6] px-3 md:px-4 py-1.5 rounded-full border border-[#e5e5e3]">
-            <div class="flex items-center space-x-1.5 md:space-x-2 text-xs">
+        <!-- Dynamic Game Status Bar -->
+        <div id="gameStatusBar" class="hidden items-center space-x-3 md:space-x-5 bg-[#f7f7f6] px-3 md:px-4 py-1.5 rounded-full border border-[#e5e5e3]">
+            <button id="wikiBackButton" onclick="goBackInHistory()" disabled class="px-2.5 py-1 bg-[#ffffff] border border-[#d3d3d1] text-[#767673] text-[11px] font-chivo font-bold rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#f1f1f0] hover:text-[#121212]">
+                ← Back
+            </button>
+            <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
+            <div class="flex items-center space-x-1.5 text-xs">
                 <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Target:</span>
-                <span id="targetArticleDisplay" class="font-serif font-bold text-[#121212] underline decoration-[#000000] underline-offset-2 truncate max-w-[100px] md:max-w-[160px]">Loading...</span>
+                <span id="targetArticleDisplay" class="font-serif font-bold text-[#121212] underline decoration-[#000000] underline-offset-2 truncate max-w-[100px] md:max-w-[150px]">Loading...</span>
                 <button id="previewTargetBtn" onclick="openTargetPreview()" class="ml-1 md:ml-2 px-2.5 py-1 bg-[#121212] hover:bg-[#333333] text-white text-[10px] font-chivo uppercase tracking-wider font-bold rounded-full transition-all shadow-sm flex items-center space-x-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -208,11 +206,6 @@
                     <span class="hidden sm:inline">Peek Target (10s)</span>
                     <span class="sm:hidden">Peek</span>
                 </button>
-            </div>
-            <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
-            <div class="flex items-center space-x-1.5 text-xs">
-                <span class="text-[#767673] uppercase tracking-wider font-chivo text-[10px] md:text-xs">Mode:</span>
-                <span id="modeDisplay" class="font-bold text-[#121212] font-chivo uppercase">EASY</span>
             </div>
             <div class="h-4 w-[1px] bg-[#d3d3d1]"></div>
             <div class="flex items-center space-x-1.5 text-xs">
@@ -231,28 +224,45 @@
         </div>
     </header>
 
+    <!-- Main Content Layout -->
     <div class="flex-1 flex overflow-hidden relative">
 
+        <!-- Sidebar / Lobby & Chat -->
         <aside id="sidebar" class="w-80 bg-[#ffffff] border-r border-[#e5e5e3] flex flex-col shrink-0 transition-all duration-300 z-20 shadow-lg md:shadow-none">
+            <!-- Sidebar Tabs -->
             <div class="flex border-b border-[#e5e5e3] bg-[#fcfcfc]">
                 <button onclick="switchTab('lobby')" id="tabLobbyBtn" class="flex-1 py-3 text-xs font-chivo font-bold uppercase tracking-wider text-[#121212] border-b-2 border-[#121212] bg-white transition-all">Lobby</button>
                 <button onclick="switchTab('chat')" id="tabChatBtn" class="flex-1 py-3 text-xs font-chivo font-bold uppercase tracking-wider text-[#767673] hover:text-[#121212] transition-all">Chat</button>
             </div>
 
+            <!-- Tab: Lobby -->
             <div id="tabLobbyContent" class="flex-1 overflow-y-auto p-5 space-y-6">
                 
+                <!-- Profile Section (PFP Upload) -->
+                <div class="bg-[#f7f7f6] p-3 rounded-lg border border-[#e5e5e3] flex items-center space-x-3">
+                    <div class="relative group cursor-pointer" onclick="document.getElementById('pfpFileInput').click()">
+                        <img id="userPfpPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23767673' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" class="w-12 h-12 rounded-full object-cover border border-[#d3d3d1] bg-white">
+                        <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <input type="file" id="pfpFileInput" accept="image/*" class="hidden" onchange="handlePfpUpload(event)">
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-[10px] font-chivo uppercase tracking-wider text-[#767673]">Nickname</label>
+                        <input type="text" id="playerNicknameInput" onchange="updateNickname()" class="w-full bg-white border border-[#d3d3d1] rounded px-2.5 py-1 text-xs text-[#121212] focus:outline-none focus:border-[#121212]" placeholder="Enter nickname">
+                    </div>
+                </div>
+
+                <!-- Lobby Landing View -->
                 <div id="lobbyLanding" class="space-y-4">
                     <div class="space-y-1">
                         <h2 class="font-serif font-bold text-lg text-[#121212]">Welcome, Racer</h2>
-                        <p class="text-xs text-[#767673] leading-relaxed">Race solo or with friends from a starting Wikipedia article to a target article purely by clicking internal links.</p>
+                        <p class="text-xs text-[#767673] leading-relaxed">Race solo or with friends from a starting article to a target article purely by clicking links.</p>
                     </div>
 
                     <div class="space-y-3 pt-2">
-                        <div>
-                            <label class="block text-[11px] font-chivo uppercase tracking-wider text-[#767673] mb-1">Your Nickname</label>
-                            <input type="text" id="playerNicknameInput" onchange="updateNickname()" class="w-full bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs text-[#121212] focus:outline-none focus:border-[#121212]" placeholder="Enter nickname">
-                        </div>
-
                         <button onclick="createGame()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 px-4 rounded transition-colors shadow-sm">
                             Create Multiplayer Room
                         </button>
@@ -272,6 +282,7 @@
                     </div>
                 </div>
 
+                <!-- Active Lobby View -->
                 <div id="activeLobby" class="space-y-5 hidden">
                     <div class="bg-[#f7f7f6] border border-[#e5e5e3] rounded-lg p-3.5 space-y-2.5">
                         <div class="flex items-center justify-between">
@@ -284,6 +295,7 @@
                         </div>
                     </div>
 
+                    <!-- Host Controls -->
                     <div id="hostControls" class="space-y-3.5 border-t border-[#e5e5e3] pt-4">
                         <div class="flex items-center justify-between">
                             <h3 class="font-serif font-bold text-sm text-[#121212]">Match Settings</h3>
@@ -294,7 +306,7 @@
                             <label class="block text-[10px] font-chivo uppercase text-[#767673]">Start Article</label>
                             <div class="flex space-x-2">
                                 <input type="text" id="configStartPage" value="Dog" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
-                                <button onclick="shuffleStartPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Random Start Page">
+                                <button onclick="shuffleStartPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Start Page">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
                                     </svg>
@@ -306,7 +318,7 @@
                             <label class="block text-[10px] font-chivo uppercase text-[#767673]">Target Article</label>
                             <div class="flex space-x-2">
                                 <input type="text" id="configTargetPage" value="Cat" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#121212]">
-                                <button onclick="shuffleTargetPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Random Target Page">
+                                <button onclick="shuffleTargetPage()" class="p-2 bg-[#f1f1f0] hover:bg-[#e5e5e3] rounded border border-[#d3d3d1] text-[#121212] transition-colors flex items-center justify-center" title="Shuffle Target Page">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
                                     </svg>
@@ -319,12 +331,16 @@
                                 <span class="text-xs font-chivo font-bold text-[#121212]">Hard Mode</span>
                                 <input type="checkbox" id="configHardMode" class="w-4 h-4 accent-[#121212] cursor-pointer">
                             </div>
-                            <p class="text-[10px] text-[#767673] leading-tight">Hard Mode removes side infoboxes & table of contents to hide quick shortcut links!</p>
+                            <p class="text-[10px] text-[#767673] leading-tight">Removes side infoboxes & table of contents to hide quick shortcut links!</p>
                         </div>
 
-                        <div class="flex items-center justify-between pt-1">
-                            <span class="text-xs font-chivo uppercase text-[#767673]">Allow Find (Ctrl+F)</span>
-                            <input type="checkbox" id="configAllowFind" checked class="w-4 h-4 accent-[#121212] cursor-pointer">
+                        <!-- Cmd/Ctrl+F Toggle -->
+                        <div class="bg-[#f7f7f6] p-2.5 rounded border border-[#e5e5e3] space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-chivo font-bold text-[#121212]">Allow Cmd/Ctrl + F</span>
+                                <input type="checkbox" id="configAllowFind" checked class="w-4 h-4 accent-[#121212] cursor-pointer">
+                            </div>
+                            <p class="text-[10px] text-[#767673] leading-tight">When disabled, blocks browser page search during active races.</p>
                         </div>
 
                         <button onclick="startGame()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 rounded transition-colors shadow-sm">
@@ -332,13 +348,13 @@
                         </button>
                     </div>
 
+                    <!-- Racers List -->
                     <div class="space-y-2 border-t border-[#e5e5e3] pt-4">
                         <div class="flex items-center justify-between">
                             <h3 class="font-serif font-bold text-sm text-[#121212]">Racers</h3>
                             <span id="playerCountBadge" class="text-[10px] font-mono text-[#767673]">1 player</span>
                         </div>
-                        <div id="playersListContainer" class="space-y-1.5 max-h-56 overflow-y-auto">
-                            </div>
+                        <div id="playersListContainer" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
                     </div>
 
                     <button onclick="leaveGame()" class="w-full bg-transparent hover:bg-[#fff5f5] text-[#c53030] border border-[#feb2b2] font-chivo uppercase text-xs tracking-wider font-bold py-2 rounded transition-colors">
@@ -347,9 +363,9 @@
                 </div>
             </div>
 
+            <!-- Tab: Chat -->
             <div id="tabChatContent" class="flex-1 flex flex-col hidden overflow-hidden">
-                <div id="chatMessagesContainer" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
-                    </div>
+                <div id="chatMessagesContainer" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs"></div>
                 <div class="p-3 border-t border-[#e5e5e3] bg-white flex space-x-2">
                     <input type="text" id="chatInput" onkeydown="if(event.key==='Enter')sendChatMessage()" class="flex-1 bg-[#f7f7f6] border border-[#d3d3d1] rounded px-3 py-2 text-xs focus:outline-none focus:border-[#121212]" placeholder="Say something...">
                     <button onclick="sendChatMessage()" class="bg-[#121212] hover:bg-[#333333] text-white px-3 py-2 rounded text-xs font-chivo uppercase font-bold transition-colors">
@@ -359,13 +375,16 @@
             </div>
         </aside>
 
+        <!-- Wikipedia Viewport -->
         <main class="flex-1 flex flex-col bg-[#ffffff] relative overflow-hidden">
             
+            <!-- Countdown Overlay -->
             <div id="countdownOverlay" class="absolute inset-0 bg-black/70 z-50 hidden flex flex-col items-center justify-center text-white space-y-4">
                 <span class="text-xs font-chivo uppercase tracking-widest text-[#d3d3d1]">Get Ready to Race...</span>
                 <h1 id="countdownNumber" class="font-serif font-bold text-9xl text-white animate-bounce">3</h1>
             </div>
 
+            <!-- Welcome Screen -->
             <div id="readerWelcomeState" class="flex-1 flex items-center justify-center p-6 overflow-y-auto">
                 <div class="bg-[#f7f7f6] border border-[#e5e5e3] rounded-xl p-8 max-w-lg w-full text-center space-y-5 shadow-sm">
                     <div class="w-14 h-14 rounded-full bg-white border border-[#e5e5e3] flex items-center justify-center text-[#767673] mx-auto shadow-sm">
@@ -383,6 +402,7 @@
                 </div>
             </div>
 
+            <!-- Fast Skeleton Loader -->
             <div id="readerLoadingState" class="flex-1 hidden p-8 space-y-6 animate-pulse overflow-hidden">
                 <div class="h-8 bg-[#f1f1f0] rounded w-3/4"></div>
                 <div class="space-y-3">
@@ -391,18 +411,16 @@
                     <div class="h-4 bg-[#f1f1f0] rounded w-4/6"></div>
                 </div>
                 <div class="h-48 bg-[#f1f1f0] rounded w-full my-4"></div>
-                <div class="space-y-3">
-                    <div class="h-4 bg-[#f1f1f0] rounded w-full"></div>
-                    <div class="h-4 bg-[#f1f1f0] rounded w-11/12"></div>
-                </div>
             </div>
 
+            <!-- Embedded Wikipedia View -->
             <div id="wikiScrollContainer" class="flex-1 overflow-y-auto px-6 md:px-12 py-8 hidden">
-                <div id="wikiHeader" class="max-w-7xl mx-auto border-b border-[#e5e5e3] pb-4 mb-6">
+                <div id="wikiHeader" class="max-w-7xl mx-auto border-b border-[#a2a9b1] pb-3 mb-6">
                     <span class="text-xs font-chivo text-[#767673] uppercase tracking-widest">Current Article</span>
                     <h1 id="wikiArticleTitleHeader" class="font-serif text-3xl font-bold text-[#121212] mt-1">Article</h1>
                 </div>
                 
+                <!-- Dedicated 3-Column Wikipedia Grid -->
                 <div id="wikiArticleGrid" class="wiki-article-grid max-w-7xl mx-auto">
                     <div id="wikiTocSidebar" class="wiki-toc-sidebar"></div>
                     <div id="wikiMainBody" class="prose font-serif text-[#222222] leading-relaxed pb-20"></div>
@@ -412,6 +430,7 @@
         </main>
     </div>
 
+    <!-- Results Modal -->
     <div id="resultsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-6 border border-[#e5e5e3] max-h-[90vh] flex flex-col">
             <div class="text-center space-y-1 border-b border-[#e5e5e3] pb-4">
@@ -421,8 +440,7 @@
 
             <div class="flex-1 overflow-y-auto space-y-4 pr-1">
                 <h3 class="font-serif font-bold text-sm text-[#121212]">Racer Paths & Results</h3>
-                <div id="resultsListContainer" class="space-y-3">
-                    </div>
+                <div id="resultsListContainer" class="space-y-3"></div>
             </div>
 
             <button onclick="closeResultsModal()" class="w-full bg-[#121212] hover:bg-[#333333] text-white font-chivo uppercase text-xs tracking-wider font-bold py-3 rounded transition-colors shadow-sm shrink-0">
@@ -431,6 +449,7 @@
         </div>
     </div>
 
+    <!-- Target Article Preview Modal -->
     <div id="targetPreviewModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-3 md:p-6 backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full flex flex-col h-[85vh] border border-[#e5e5e3] overflow-hidden">
             <div class="bg-[#121212] text-white px-5 py-3.5 flex items-center justify-between shrink-0">
@@ -443,7 +462,7 @@
                         <span class="text-[10px] text-white/70 uppercase font-chivo">TIME LEFT:</span>
                         <span id="previewCountdownDisplay" class="text-red-400 font-extrabold text-sm">10s</span>
                     </div>
-                    <button onclick="closeTargetPreview()" class="text-white/70 hover:text-white p-1 rounded transition-colors" title="Close Preview">
+                    <button onclick="closeTargetPreview()" class="text-white/70 hover:text-white p-1 rounded transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -455,11 +474,10 @@
                 <div id="previewProgressBar" class="preview-progress-bar bg-red-500 h-full w-full"></div>
             </div>
 
-            <div id="previewModalContent" class="flex-1 overflow-y-auto p-6 font-serif text-[#222222] leading-relaxed text-sm">
-                </div>
+            <div id="previewModalContent" class="flex-1 overflow-y-auto p-6 font-serif text-[#222222] leading-relaxed text-sm"></div>
 
             <div class="bg-[#f7f7f6] border-t border-[#e5e5e3] px-5 py-3 flex items-center justify-between shrink-0 text-xs text-[#767673] font-chivo">
-                <span class="text-[11px]">Note: Preview is view-only (links are disabled & single-use per race).</span>
+                <span class="text-[11px]">Note: Target peek is single-use per race.</span>
                 <button onclick="closeTargetPreview()" class="bg-[#121212] hover:bg-[#333333] text-white px-4 py-1.5 rounded font-bold transition-colors text-xs">
                     Close Preview Now
                 </button>
@@ -467,12 +485,12 @@
         </div>
     </div>
 
+    <!-- Notification Toast -->
     <div id="customNotification" class="fixed bottom-6 right-6 bg-[#121212] text-white text-xs px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center space-x-2">
         <span id="notifMessage">Notification message</span>
     </div>
 
     <script type="module">
-        // --- ABLY CONFIGURATION ---
         const ABLY_API_KEY = "0_JpqA.25FIlg:7J1_RBqpqJ6cgDkZJDPO-voo0jKmSV04DqPh634HzTY";
         
         let ably = null;
@@ -481,6 +499,8 @@
         let clientId = 'user_' + Math.random().toString(36).substring(2, 8);
         let currentGameCode = null;
         let isHost = true;
+
+        let userPfpData = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%23767673' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
 
         let gameState = {
             status: 'lobby',
@@ -497,36 +517,61 @@
         let startTime = null;
         let timerInterval = null;
 
-        // Ultra-fast in-memory page cache & prefetching
         const pageCache = new Map();
-        let hoverPrefetchTimer = null;
-
-        // Preview state variables
         let hasUsedPreview = false;
         let previewTimerInterval = null;
+
+        // Command/Control + F Interception Engine
+        window.addEventListener('keydown', (e) => {
+            if (gameState.status === 'racing' && !gameState.allowFind) {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                    e.preventDefault();
+                    showNotification("Cmd/Ctrl + F search is disabled for this race!");
+                }
+            }
+        });
+
+        // Compressed PFP Uploader
+        window.handlePfpUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 64;
+                    canvas.height = 64;
+                    ctx.drawImage(img, 0, 0, 64, 64);
+                    userPfpData = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    document.getElementById('userPfpPreview').src = userPfpData;
+                    if (gameState.players[clientId]) {
+                        gameState.players[clientId].pfp = userPfpData;
+                        publishGameState();
+                    }
+                    showNotification("Profile picture updated!");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
         function initCloudSync() {
             if (ABLY_API_KEY && ABLY_API_KEY !== "YOUR_ABLY_API_KEY_HERE") {
                 try {
                     ably = new Ably.Realtime({ key: ABLY_API_KEY, clientId: clientId });
-                    ably.connection.on('connected', () => {
-                        console.log("Connected to Ably Realtime network!");
-                    });
-                } catch (err) {
-                    console.warn("Ably client initialization failed:", err);
-                }
-            } else {
-                console.warn("Ably API key not provided. Running in local fallback mode.");
+                } catch (err) {}
             }
 
             document.getElementById('currentUserDisplay').innerText = `ID: ${clientId.substring(0, 6)}`;
-            
-            // Set initial nickname
             document.getElementById('playerNicknameInput').value = "Racer_" + Math.floor(Math.random() * 900 + 100);
 
-            // Initialize local player state
             gameState.players[clientId] = {
                 name: document.getElementById('playerNicknameInput').value,
+                pfp: userPfpData,
                 isHost: true,
                 status: 'lobby',
                 path: [],
@@ -535,23 +580,22 @@
             };
         }
 
-        // Initialize connection on load
         initCloudSync();
 
-        // Sidebar Responsive Toggle Functions
+        // Responsive Sidebar Controls
         const sidebar = document.getElementById('sidebar');
         let sidebarOpen = true;
 
         function closeSidebar() {
             sidebarOpen = false;
-            sidebar.classList.remove('w-80', 'border-r', 'border-[#e5e5e3]');
+            sidebar.classList.remove('w-80', 'border-r');
             sidebar.classList.add('w-0', 'overflow-hidden', 'opacity-0', 'border-r-0');
         }
 
         function openSidebar() {
             sidebarOpen = true;
             sidebar.classList.remove('w-0', 'overflow-hidden', 'opacity-0', 'border-r-0');
-            sidebar.classList.add('w-80', 'border-r', 'border-[#e5e5e3]');
+            sidebar.classList.add('w-80', 'border-r');
         }
 
         document.getElementById('sidebarToggle').addEventListener('click', () => {
@@ -600,20 +644,15 @@
             document.getElementById('activeLobby').classList.remove('hidden');
             renderGameState();
         }
-        window.enterActiveLobbyView = enterActiveLobbyView;
 
         function subscribeToRoom(code) {
-            if (roomChannel) {
-                roomChannel.unsubscribe();
-            }
-
+            if (roomChannel) roomChannel.unsubscribe();
             if (!ably) return;
 
             roomChannel = ably.channels.get(`wikirace:${code}`);
 
             roomChannel.subscribe('state-update', (message) => {
                 const remoteData = message.data;
-                
                 gameState.status = remoteData.status || gameState.status;
                 gameState.startPage = remoteData.startPage || gameState.startPage;
                 gameState.targetPage = remoteData.targetPage || gameState.targetPage;
@@ -645,17 +684,13 @@
             }
 
             roomChannel.subscribe('request-state', () => {
-                if (isHost) {
-                    publishGameState();
-                }
+                if (isHost) publishGameState();
             });
         }
 
         async function publishGameState() {
             renderGameState();
-            if (roomChannel) {
-                roomChannel.publish('state-update', gameState);
-            }
+            if (roomChannel) roomChannel.publish('state-update', gameState);
         }
 
         function renderGameState() {
@@ -671,7 +706,7 @@
                 document.getElementById('configStartPage').value = gameState.startPage || 'Dog';
                 document.getElementById('configTargetPage').value = gameState.targetPage || 'Cat';
                 document.getElementById('configHardMode').checked = gameState.hardMode === true;
-                document.getElementById('configAllowFind').checked = gameState.allowFind !== false;
+                document.getElementById('configAllowFind').checked = gameState.allowFind === true;
                 document.getElementById('hostControls').classList.add('hidden');
             } else if (gameState.status === 'lobby') {
                 document.getElementById('hostControls').classList.remove('hidden');
@@ -693,14 +728,18 @@
                     const isSelf = p.id === clientId;
                     const hostLabel = p.isHost ? '<span class="text-[9px] bg-[#121212] text-white px-1.5 py-0.5 rounded uppercase font-chivo font-bold ml-1">Host</span>' : '';
                     const lastPage = p.path && p.path.length > 0 ? p.path[p.path.length - 1] : (gameState.startPage || 'Dog');
-                    
+                    const pfpSrc = p.pfp || userPfpData;
+
                     div.innerHTML = `
-                        <div class="flex flex-col truncate max-w-[170px]">
-                            <div class="flex items-center space-x-1 font-bold text-[#121212]">
-                                <span class="truncate">${p.name || 'Racer'} ${isSelf ? '(You)' : ''}</span>
-                                ${hostLabel}
+                        <div class="flex items-center space-x-2.5 min-w-0 flex-1 mr-2">
+                            <img src="${pfpSrc}" class="w-7 h-7 rounded-full object-cover border border-[#d3d3d1] bg-white shrink-0">
+                            <div class="flex flex-col truncate">
+                                <div class="flex items-center space-x-1 font-bold text-[#121212]">
+                                    <span class="truncate">${p.name || 'Racer'} ${isSelf ? '(You)' : ''}</span>
+                                    ${hostLabel}
+                                </div>
+                                <span class="text-[10px] text-[#767673] truncate font-serif">Page: ${lastPage}</span>
                             </div>
-                            <span class="text-[10px] text-[#767673] truncate font-serif">Page: ${lastPage}</span>
                         </div>
                         <div class="text-right shrink-0">
                             <span class="font-mono font-bold text-[#121212] block">${p.clicks || 0} clicks</span>
@@ -725,7 +764,7 @@
                 hardMode: document.getElementById('configHardMode').checked,
                 allowFind: document.getElementById('configAllowFind').checked,
                 players: {
-                    [clientId]: { name: nickname, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
+                    [clientId]: { name: nickname, pfp: userPfpData, isHost: true, status: 'lobby', path: [], clicks: 0, time: 0 }
                 },
                 chat: []
             };
@@ -740,18 +779,15 @@
         async function joinGame() {
             const nickname = document.getElementById('playerNicknameInput').value.trim() || "Racer";
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-            if (!code) {
-                showNotification("Please enter a room code.");
-                return;
-            }
+            if (!code) return showNotification("Please enter a room code.");
+
             currentGameCode = code;
             isHost = false;
 
-            gameState.players[clientId] = { name: nickname, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
+            gameState.players[clientId] = { name: nickname, pfp: userPfpData, isHost: false, status: 'lobby', path: [], clicks: 0, time: 0 };
 
             subscribeToRoom(code);
             await publishGameState();
-
             enterActiveLobbyView();
             showNotification("Joined Room: " + code);
         }
@@ -762,9 +798,7 @@
                 roomChannel.unsubscribe();
                 roomChannel = null;
             }
-            if (gameState.players[clientId]) {
-                delete gameState.players[clientId];
-            }
+            if (gameState.players[clientId]) delete gameState.players[clientId];
             currentGameCode = null;
             isHost = true;
             document.getElementById('lobbyLanding').classList.remove('hidden');
@@ -787,9 +821,7 @@
                 gameState.startPage = randomTitle;
                 publishGameState();
             } catch (e) {
-                const fallbacks = ["Dog", "Moon", "Pizza", "Computer", "Eiffel Tower", "Pyramid"];
-                const pick = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-                document.getElementById('configStartPage').value = pick;
+                document.getElementById('configStartPage').value = "Dog";
             }
         }
         window.shuffleStartPage = shuffleStartPage;
@@ -804,23 +836,17 @@
                 gameState.targetPage = randomTitle;
                 publishGameState();
             } catch (e) {
-                const fallbacks = ["Cat", "Mars", "Sushi", "Internet", "Statue of Liberty", "Guitar"];
-                const pick = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-                document.getElementById('configTargetPage').value = pick;
+                document.getElementById('configTargetPage').value = "Cat";
             }
         }
         window.shuffleTargetPage = shuffleTargetPage;
 
         function startGame() {
             if (isHost) {
-                const startInput = document.getElementById('configStartPage');
-                const targetInput = document.getElementById('configTargetPage');
-                const hardInput = document.getElementById('configHardMode');
-                const findInput = document.getElementById('configAllowFind');
-                if (startInput) gameState.startPage = startInput.value.trim() || 'Dog';
-                if (targetInput) gameState.targetPage = targetInput.value.trim() || 'Cat';
-                if (hardInput) gameState.hardMode = hardInput.checked;
-                if (findInput) gameState.allowFind = findInput.checked;
+                gameState.startPage = document.getElementById('configStartPage').value.trim() || 'Dog';
+                gameState.targetPage = document.getElementById('configTargetPage').value.trim() || 'Cat';
+                gameState.hardMode = document.getElementById('configHardMode').checked;
+                gameState.allowFind = document.getElementById('configAllowFind').checked;
             }
             gameState.status = 'countdown';
             publishGameState();
@@ -846,14 +872,10 @@
                     clearInterval(interval);
                     overlay.classList.add('hidden');
                     gameState.status = 'racing';
-                    if (gameState.players[clientId]) {
-                        gameState.players[clientId].status = 'racing';
-                    }
+                    if (gameState.players[clientId]) gameState.players[clientId].status = 'racing';
                     publishGameState();
                     
-                    // AUTO-CLOSE SIDEBAR WHEN GAME STARTS
                     closeSidebar();
-                    
                     beginRaceForSelf();
                 }
             }, 900);
@@ -864,12 +886,6 @@
             document.getElementById('gameStatusBar').classList.remove('hidden');
             document.getElementById('gameStatusBar').classList.add('flex');
             document.getElementById('targetArticleDisplay').innerText = gameState.targetPage;
-            
-            const modeDisplay = document.getElementById('modeDisplay');
-            if (modeDisplay) {
-                modeDisplay.innerText = gameState.hardMode ? 'HARD' : 'EASY';
-                modeDisplay.className = gameState.hardMode ? 'font-bold text-red-600 font-chivo uppercase' : 'font-bold text-green-600 font-chivo uppercase';
-            }
 
             hasUsedPreview = false;
             const previewBtn = document.getElementById('previewTargetBtn');
@@ -887,136 +903,149 @@
             currentClickPath = [];
             startTimer();
 
-            fetchWithRedirectResolution(gameState.targetPage).catch(() => {});
-            loadWikiPage(gameState.startPage);
+            fetchWikiFast(gameState.targetPage).catch(() => {});
+            loadWikiPage(gameState.startPage, false);
         }
 
-        // Optimized Wikipedia fetcher with auto-redirect resolution and in-memory caching
-        async function fetchWithRedirectResolution(title) {
+        // Fast Wikipedia Fetching with Optimization & Memory Caching
+        async function fetchWikiFast(title) {
             const cacheKey = title.toLowerCase().trim();
             if (pageCache.has(cacheKey)) {
                 return pageCache.get(cacheKey);
             }
 
-            // Stripped lightweight prop parameters for high-speed page loads
-            const apiURL = `https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&redirects=1&prop=text|title&disableeditsection=1&disabletoc=0&format=json&origin=*`;
-            const res = await fetch(apiURL);
-            const data = await res.json();
-            if (data.error) throw new Error(data.error.info);
+            try {
+                const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(title)}`);
+                if (res.ok) {
+                    const html = await res.text();
+                    pageCache.set(cacheKey, html);
+                    return html;
+                }
+            } catch (err) {}
 
-            const result = { title: data.parse.title, html: data.parse.text['*'] };
-            pageCache.set(cacheKey, result);
-            pageCache.set(data.parse.title.toLowerCase().trim(), result);
-            return result;
+            const fallbackRes = await fetch(`https://en.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=text&format=json&origin=*`);
+            const fallbackData = await fallbackRes.json();
+            if (fallbackData.error) throw new Error(fallbackData.error.info || "Page not found");
+            
+            const html = fallbackData.parse.text['*'];
+            pageCache.set(cacheKey, html);
+            return html;
         }
 
-        // Sanitizer to split components into dynamic layout (TOC Left, Infobox Right, Content Center)
-        function processWikiHtml(html, isHardMode = false) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-
-            // Standard clutter cleanup
-            doc.querySelectorAll('.mw-editsection, .reference, .navbox, .vertical-navbox, .sistersitebox, table.ambox, .reflist, .thumbcaption, style, script, .hatnote, .mw-jump-link').forEach(el => el.remove());
-
-            let infoboxHtml = '';
-            let tocHtml = '';
-
-            if (isHardMode) {
-                doc.querySelectorAll('.infobox, .toc, #toc, table.vertical-navbox, .sidebar').forEach(el => el.remove());
-            } else {
-                // Extract Infobox for dedicated right side column
-                const infobox = doc.querySelector('.infobox');
-                if (infobox) {
-                    infobox.className = 'wiki-infobox';
-                    infoboxHtml = infobox.outerHTML;
-                    infobox.remove();
-                }
-
-                // Extract Table of Contents for dedicated left side column
-                const toc = doc.querySelector('.toc, #toc');
-                if (toc) {
-                    toc.className = 'wiki-toc';
-                    tocHtml = toc.outerHTML;
-                    toc.remove();
-                }
-            }
-
-            // Process image tags to force valid HTTPS URLs
-            doc.querySelectorAll('img').forEach(img => {
+        // Optimized Image & Lazy-Loading Fixer
+        function fixWikipediaImageUrls(container) {
+            container.querySelectorAll('img').forEach(img => {
+                img.setAttribute('loading', 'lazy');
                 let src = img.getAttribute('src');
-                const dataSrc = img.getAttribute('data-src');
-
-                if (dataSrc) src = dataSrc;
-
                 if (src) {
-                    if (src.startsWith('//')) src = 'https:' + src;
-                    else if (src.startsWith('/')) src = 'https://en.wikipedia.org' + src;
-                    img.setAttribute('src', src);
-                    img.removeAttribute('srcset');
-                    img.className = 'my-4 rounded max-w-full h-auto mx-auto border border-[#e5e5e3] shadow-sm block';
-                    img.setAttribute('onerror', "this.style.display='none';");
+                    if (src.startsWith('//')) {
+                        img.setAttribute('src', 'https:' + src);
+                    } else if (src.startsWith('/')) {
+                        img.setAttribute('src', 'https://en.wikipedia.org' + src);
+                    }
+                }
+                let srcset = img.getAttribute('srcset');
+                if (srcset) {
+                    let newSrcset = srcset.split(',').map(part => {
+                        let trimmed = part.trim();
+                        if (trimmed.startsWith('//')) return 'https:' + trimmed;
+                        if (trimmed.startsWith('/')) return 'https://en.wikipedia.org' + trimmed;
+                        return trimmed;
+                    }).join(', ');
+                    img.setAttribute('srcset', newSrcset);
                 }
             });
-
-            return {
-                doc,
-                infoboxHtml,
-                tocHtml
-            };
         }
 
-        async function loadWikiPage(title) {
+        async function loadWikiPage(title, isBackNavigation = false) {
             const loadingState = document.getElementById('readerLoadingState');
             const scrollContainer = document.getElementById('wikiScrollContainer');
             const mainBody = document.getElementById('wikiMainBody');
             const tocSidebar = document.getElementById('wikiTocSidebar');
             const infoboxSidebar = document.getElementById('wikiInfoboxSidebar');
             const titleHeader = document.getElementById('wikiArticleTitleHeader');
+            const backBtn = document.getElementById('wikiBackButton');
 
             loadingState.classList.remove('hidden');
             scrollContainer.classList.add('hidden');
 
             try {
-                const resolved = await fetchWithRedirectResolution(title);
-                currentArticleTitle = resolved.title;
+                const rawHtml = await fetchWikiFast(title);
+                currentArticleTitle = title;
 
-                currentClickPath.push(resolved.title);
+                if (!isBackNavigation) {
+                    currentClickPath.push(title);
+                }
+
                 if (gameState.players[clientId]) {
                     gameState.players[clientId].path = currentClickPath;
-                    gameState.players[clientId].clicks = currentClickPath.length - 1;
+                    gameState.players[clientId].clicks = Math.max(0, currentClickPath.length - 1);
                     publishGameState();
                 }
 
                 document.getElementById('clickCountDisplay').innerText = Math.max(0, currentClickPath.length - 1);
+                backBtn.disabled = currentClickPath.length <= 1;
 
-                if (resolved.title.toLowerCase() === gameState.targetPage.toLowerCase()) {
+                if (title.toLowerCase() === gameState.targetPage.toLowerCase()) {
                     handlePlayerWon();
                 }
 
-                const { doc, infoboxHtml, tocHtml } = processWikiHtml(resolved.html, gameState.hardMode);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHtml, 'text/html');
 
-                // Pre-cache links in advance to make fetching instant
+                if (gameState.hardMode) {
+                    doc.querySelectorAll('.infobox, table.infobox, .sidebar, .toc').forEach(el => el.remove());
+                    infoboxSidebar.innerHTML = '';
+                    tocSidebar.innerHTML = '';
+                } else {
+                    const infobox = doc.querySelector('.infobox, table.infobox');
+                    if (infobox) {
+                        infoboxSidebar.innerHTML = infobox.outerHTML;
+                        infobox.remove();
+                        fixWikipediaImageUrls(infoboxSidebar);
+                    } else {
+                        infoboxSidebar.innerHTML = '';
+                    }
+
+                    const headings = doc.querySelectorAll('h2, h3');
+                    let tocHtml = `<div class="toc-header">Contents</div><a class="toc-item toc-level-2" href="#wikiHeader">(Top)</a>`;
+                    
+                    headings.forEach((heading, idx) => {
+                        const text = heading.textContent.replace(/\[edit\]/g, '').trim();
+                        if (!text) return;
+
+                        const headingId = `section_heading_${idx}`;
+                        heading.id = headingId;
+
+                        const isH3 = heading.tagName.toLowerCase() === 'h3';
+                        tocHtml += `<a class="toc-item ${isH3 ? 'toc-level-3' : 'toc-level-2'}" href="#${headingId}">${text}</a>`;
+                    });
+
+                    tocSidebar.innerHTML = tocHtml;
+                }
+
+                doc.querySelectorAll('.mw-empty-elt, style, script, .navbox, .sistersitebox, .reflist, .hatnote, .mw-jump-link, .printfooter').forEach(el => el.remove());
+
                 doc.querySelectorAll('a').forEach(a => {
                     const href = a.getAttribute('href');
-                    if (href && href.startsWith('/wiki/') && !href.includes(':')) {
-                        const targetTitle = decodeURIComponent(href.replace('/wiki/', '').split('#')[0]);
-                        if (targetTitle) {
-                            a.setAttribute('data-wiki-link', targetTitle);
+                    if (href && (href.startsWith('./') || href.startsWith('/wiki/')) && !href.includes(':')) {
+                        const cleanTarget = decodeURIComponent(href.replace('./', '').replace('/wiki/', '').split('#')[0]);
+                        if (cleanTarget) {
+                            a.setAttribute('data-wiki-link', cleanTarget);
                             a.setAttribute('href', 'javascript:void(0)');
-                            a.className = 'text-[#3366cc] hover:underline cursor-pointer font-medium transition-colors';
+                            a.className = "text-[#3366cc] hover:underline cursor-pointer font-medium";
                         }
                     } else {
                         a.removeAttribute('href');
                         a.style.color = 'inherit';
-                        a.style.textDecoration = 'none';
                         a.style.pointerEvents = 'none';
+                        a.style.textDecoration = 'none';
                     }
                 });
 
-                titleHeader.innerText = resolved.title;
+                titleHeader.innerText = title;
                 mainBody.innerHTML = doc.body.innerHTML;
-                tocSidebar.innerHTML = tocHtml;
-                infoboxSidebar.innerHTML = infoboxHtml;
+                fixWikipediaImageUrls(mainBody);
 
                 loadingState.classList.add('hidden');
                 scrollContainer.classList.remove('hidden');
@@ -1028,18 +1057,32 @@
                 mainBody.innerHTML = `
                     <div class="text-center py-12 space-y-3">
                         <h2 class="font-serif font-bold text-xl text-[#c53030]">Unable to load article</h2>
-                        <p class="text-xs text-[#767673]">Could not retrieve "${title}". Try clicking another link.</p>
+                        <p class="text-xs text-[#767673]">Could not fetch "${title}". Hit the Back button or choose another link.</p>
                     </div>
                 `;
             }
         }
 
-        // Target Article Quick Preview
-        async function openTargetPreview() {
-            if (hasUsedPreview) {
-                showNotification("Target preview can only be used once per race.");
-                return;
+        window.goBackInHistory = function() {
+            if (currentClickPath.length > 1) {
+                currentClickPath.pop();
+                const previousTitle = currentClickPath[currentClickPath.length - 1];
+                loadWikiPage(previousTitle, true);
             }
+        };
+
+        const mainContainer = document.getElementById('wikiArticleGrid');
+        mainContainer.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-wiki-link]');
+            if (link) {
+                e.preventDefault();
+                const target = link.getAttribute('data-wiki-link');
+                if (target) loadWikiPage(target, false);
+            }
+        });
+
+        async function openTargetPreview() {
+            if (hasUsedPreview) return showNotification("Target preview can only be used once per race.");
 
             hasUsedPreview = true;
             const previewBtn = document.getElementById('previewTargetBtn');
@@ -1054,28 +1097,24 @@
             const progressBar = document.getElementById('previewProgressBar');
 
             titleEl.innerText = `Target Preview: ${gameState.targetPage}`;
-            contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#767673]">Loading target preview...</div>`;
+            contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#767673]">Loading preview...</div>`;
             modal.classList.remove('hidden');
 
             try {
-                const resolved = await fetchWithRedirectResolution(gameState.targetPage);
-                const { doc } = processWikiHtml(resolved.html, gameState.hardMode);
-                
+                const rawHtml = await fetchWikiFast(gameState.targetPage);
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawHtml, 'text/html');
+
                 doc.querySelectorAll('a').forEach(a => {
                     a.removeAttribute('href');
                     a.style.color = 'inherit';
                     a.style.pointerEvents = 'none';
-                    a.style.textDecoration = 'none';
                 });
 
-                contentEl.innerHTML = `
-                    <div class="border-b border-[#e5e5e3] pb-3 mb-4">
-                        <span class="text-[10px] font-chivo text-[#767673] uppercase tracking-widest">Target Article</span>
-                        <h2 class="font-serif text-2xl font-bold text-[#121212]">${resolved.title}</h2>
-                    </div>
-                ` + doc.body.innerHTML;
+                contentEl.innerHTML = doc.body.innerHTML;
+                fixWikipediaImageUrls(contentEl);
             } catch (err) {
-                contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#c53030]">Failed to load preview for target article.</div>`;
+                contentEl.innerHTML = `<div class="p-8 text-center text-xs text-[#c53030]">Failed to load preview.</div>`;
             }
 
             let secondsLeft = 10;
@@ -1088,9 +1127,7 @@
                 countdownEl.innerText = `${secondsLeft}s`;
                 progressBar.style.width = `${(secondsLeft / 10) * 100}%`;
 
-                if (secondsLeft <= 0) {
-                    closeTargetPreview();
-                }
+                if (secondsLeft <= 0) closeTargetPreview();
             }, 1000);
         }
         window.openTargetPreview = openTargetPreview;
@@ -1104,43 +1141,6 @@
         }
         window.closeTargetPreview = closeTargetPreview;
 
-        // Ultra-fast hover prefetching listener
-        const gridContainer = document.getElementById('wikiArticleGrid');
-        
-        gridContainer.addEventListener('mouseover', (e) => {
-            const link = e.target.closest('a[data-wiki-link]');
-            if (link) {
-                const targetTitle = link.getAttribute('data-wiki-link');
-                if (targetTitle) {
-                    clearTimeout(hoverPrefetchTimer);
-                    hoverPrefetchTimer = setTimeout(() => {
-                        fetchWithRedirectResolution(targetTitle).catch(() => {});
-                    }, 50);
-                }
-            }
-        });
-
-        gridContainer.addEventListener('click', (e) => {
-            const link = e.target.closest('a[data-wiki-link]');
-            if (link) {
-                e.preventDefault();
-                const targetTitle = link.getAttribute('data-wiki-link');
-                if (targetTitle) {
-                    loadWikiPage(targetTitle);
-                }
-            }
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (!gameState.allowFind && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-                e.preventDefault();
-                showNotification("Find (Ctrl+F) has been disabled for this match!");
-            }
-            if (e.key === 'Escape') {
-                closeTargetPreview();
-            }
-        });
-
         function startTimer() {
             startTime = Date.now();
             if (timerInterval) clearInterval(timerInterval);
@@ -1149,9 +1149,7 @@
                 const min = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
                 const sec = String(elapsedSec % 60).padStart(2, '0');
                 document.getElementById('timerDisplay').innerText = `${min}:${sec}`;
-                if (gameState.players[clientId]) {
-                    gameState.players[clientId].time = elapsedSec;
-                }
+                if (gameState.players[clientId]) gameState.players[clientId].time = elapsedSec;
             }, 1000);
         }
 
@@ -1165,9 +1163,7 @@
         function handlePlayerWon() {
             stopTimer();
             gameState.status = 'finished';
-            if (gameState.players[clientId]) {
-                gameState.players[clientId].status = 'finished';
-            }
+            if (gameState.players[clientId]) gameState.players[clientId].status = 'finished';
             publishGameState();
             showResultsModal();
         }
@@ -1195,10 +1191,14 @@
                 const pathStr = p.path && p.path.length > 0 ? p.path.join(' → ') : 'No path recorded';
                 const min = String(Math.floor((p.time || 0) / 60)).padStart(2, '0');
                 const sec = String((p.time || 0) % 60).padStart(2, '0');
+                const pfpSrc = p.pfp || userPfpData;
 
                 div.innerHTML = `
                     <div class="flex items-center justify-between font-bold text-[#121212]">
-                        <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
+                        <div class="flex items-center space-x-2">
+                            <img src="${pfpSrc}" class="w-6 h-6 rounded-full object-cover border border-[#d3d3d1] bg-white">
+                            <span>${p.name} ${id === clientId ? '(You)' : ''}</span>
+                        </div>
                         <span class="text-[#767673] font-chivo font-normal">${p.clicks || 0} clicks | Time: ${min}:${sec}</span>
                     </div>
                     <div class="text-[11px] text-[#555552] font-serif bg-[#ffffff] p-2.5 rounded border border-[#e5e5e3] overflow-x-auto whitespace-nowrap">
@@ -1213,9 +1213,7 @@
 
         function closeResultsModal() {
             document.getElementById('resultsModal').classList.add('hidden');
-            if (isHost) {
-                document.getElementById('hostControls').classList.remove('hidden');
-            }
+            if (isHost) document.getElementById('hostControls').classList.remove('hidden');
             gameState.status = 'lobby';
             publishGameState();
         }
@@ -1227,7 +1225,12 @@
             if (!text) return;
 
             const nickname = gameState.players[clientId]?.name || "Racer";
-            const chatMsg = { sender: nickname, text: text, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            const chatMsg = { 
+                sender: nickname, 
+                pfp: userPfpData,
+                text: text, 
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+            };
             
             if (roomChannel) {
                 roomChannel.publish('chat-message', chatMsg);
@@ -1247,13 +1250,17 @@
             container.innerHTML = '';
             (gameState.chat || []).forEach(msg => {
                 const div = document.createElement('div');
-                div.className = "space-y-0.5";
+                div.className = "space-y-1";
+                const pfpSrc = msg.pfp || userPfpData;
                 div.innerHTML = `
                     <div class="flex items-center justify-between text-[10px] text-[#767673] font-chivo">
-                        <span class="font-bold text-[#121212]">${msg.sender}</span>
+                        <div class="flex items-center space-x-1.5">
+                            <img src="${pfpSrc}" class="w-4 h-4 rounded-full object-cover border border-[#d3d3d1]">
+                            <span class="font-bold text-[#121212]">${msg.sender}</span>
+                        </div>
                         <span>${msg.time}</span>
                     </div>
-                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded border border-[#e5e5e3]">${msg.text}</p>
+                    <p class="text-[#333333] bg-[#f7f7f6] p-2 rounded border border-[#e5e5e3] ml-5">${msg.text}</p>
                 `;
                 container.appendChild(div);
             });
