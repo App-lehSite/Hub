@@ -3,24 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clashdle – Infinite</title>
+<title>Clashdle – NYT Style</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Georgia:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --gold: #FFD700; --gold2: #FFA500;
-    --dark: #050b18; --panel: rgba(10,20,50,0.85);
-    --blue: #3a7bd5; --blue2: #00d2ff;
-    --green: #22c55e; --red: #ef4444;
-    --border: rgba(58,123,213,0.25);
+    --nyt-bg: #ffffff;
+    --nyt-card-bg: #f8f9fa;
+    --nyt-text-primary: #121212;
+    --nyt-text-secondary: #787c7e;
+    --nyt-border: #d3d6da;
+    --nyt-correct: #6aaa64;       /* Wordle Green */
+    --nyt-correct-text: #ffffff;
+    --nyt-partial: #c9b458;       /* Wordle Yellow */
+    --nyt-partial-text: #ffffff;
+    --nyt-incorrect: #787c7e;     /* Wordle Neutral Gray */
+    --nyt-incorrect-text: #ffffff;
+    --nyt-font-sans: 'Libre Franklin', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --nyt-font-serif: 'Georgia', serif;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body {
-    font-family: 'Nunito', sans-serif;
-    background: radial-gradient(ellipse at 30% 10%, #0d1f40 0%, #050b18 70%);
-    min-height: 100vh; color: #fff;
+    font-family: var(--nyt-font-sans);
+    background-color: var(--nyt-bg);
+    color: var(--nyt-text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     background-attachment: fixed;
   }
+
   body.pancake-bg {
     background-image: url('assets/pancakesbg.jpg') !important;
     background-size: cover !important;
@@ -28,235 +43,298 @@
     background-attachment: fixed !important;
   }
 
-  /* Floating particles */
-  .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-  .particle {
-    position: absolute; border-radius: 50%;
-    background: radial-gradient(circle, rgba(58,123,213,0.6), transparent);
-    animation: drift linear infinite;
-  }
-  @keyframes drift {
-    0% { transform: translateY(100vh) scale(0); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 0.5; }
-    100% { transform: translateY(-20px) scale(1.2); opacity: 0; }
+  /* Header Bar */
+  header {
+    width: 100%;
+    max-width: 1000px;
+    border-bottom: 1px solid var(--nyt-border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
   }
 
-  .content { position: relative; z-index: 1; }
-
-  nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 30px;
-    background: rgba(5,11,24,0.8);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-  }
-  .nav-home {
-    font-family: 'Cinzel Decorative', serif;
-    color: rgba(255,255,255,0.5);
+  .nav-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--nyt-text-secondary);
     text-decoration: none;
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    transition: color 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: color 0.15s;
   }
-  .nav-home:hover { color: var(--gold); }
-  .nav-title {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 1.6rem;
-    background: linear-gradient(135deg, #5ba3e0, #00d2ff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
-  .nav-pancake {
-    background: none; border: 1px solid rgba(255,165,0,0.3);
-    border-radius: 20px; padding: 6px 14px;
-    color: var(--gold); font-family: 'Nunito', sans-serif;
-    font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;
-    transition: all 0.2s;
-  }
-  .nav-pancake img { width: 20px; height: 20px; border-radius: 50%; }
-  .nav-pancake:hover { background: rgba(255,165,0,0.15); transform: scale(1.05); }
+  .nav-link:hover { color: var(--nyt-text-primary); }
 
-  main { max-width: 1100px; margin: 0 auto; padding: 30px 20px 60px; }
+  header h1 {
+    font-family: var(--nyt-font-serif);
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+  }
+
+  .nav-pancake {
+    background: #ffffff;
+    border: 1px solid var(--nyt-border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-family: var(--nyt-font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--nyt-text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: background 0.15s;
+  }
+  .nav-pancake img { width: 18px; height: 18px; border-radius: 50%; }
+  .nav-pancake:hover { background: #f0f0f0; }
+
+  /* Main Container */
+  main {
+    width: 100%;
+    max-width: 1050px;
+    padding: 24px 16px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
   .game-header {
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 24px;
     text-align: center;
-    margin-bottom: 30px;
-    animation: fadeDown 0.6s ease both;
   }
-  @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:none} }
 
   .guess-counter {
     display: inline-block;
-    font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: rgba(255,255,255,0.4);
-    border: 1px solid rgba(255,255,255,0.1);
-    padding: 6px 20px; border-radius: 20px;
-    background: rgba(255,255,255,0.04);
-    margin-bottom: 20px;
-    transition: all 0.3s;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--nyt-text-secondary);
+    border: 1px solid var(--nyt-border);
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: var(--nyt-card-bg);
+    margin-bottom: 16px;
+    transition: transform 0.2s;
   }
   .guess-counter.bump { animation: bump 0.3s ease; }
-  @keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  @keyframes bump { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
 
   .search-row {
-    display: flex; gap: 10px; justify-content: center; align-items: flex-start;
-    position: relative; margin-bottom: 10px;
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    position: relative;
   }
+
   .search-wrap {
-    position: relative; width: min(500px, 90vw);
+    position: relative;
+    flex: 1;
   }
+
   #guess {
-    width: 100%; padding: 14px 20px;
-    font-family: 'Nunito', sans-serif; font-size: 1rem;
-    background: rgba(255,255,255,0.06);
-    border: 1.5px solid var(--border);
-    border-radius: 14px; color: #fff;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    padding: 14px 16px;
+    font-family: var(--nyt-font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    background: #ffffff;
+    border: 2px solid var(--nyt-border);
+    border-radius: 4px;
+    color: var(--nyt-text-primary);
+    outline: none;
+    transition: border-color 0.15s ease;
   }
-  #guess:focus {
-    border-color: var(--blue);
-    box-shadow: 0 0 0 3px rgba(58,123,213,0.2);
-  }
-  #guess::placeholder { color: rgba(255,255,255,0.3); }
-  
+  #guess:focus { border-color: var(--nyt-text-primary); }
+  #guess::placeholder { color: var(--nyt-text-secondary); }
+
   #suggestions {
-    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-    background: #0d1b35; border: 1px solid var(--border);
-    border-radius: 14px; max-height: 260px; overflow-y: auto;
-    display: none; z-index: 100;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #ffffff;
+    border: 1px solid var(--nyt-border);
+    border-radius: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   }
-  #suggestions::-webkit-scrollbar { width: 4px; }
-  #suggestions::-webkit-scrollbar-track { background: transparent; }
-  #suggestions::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .suggestion {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px; cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
   }
-  .suggestion:last-child { border-bottom: none; }
-  .suggestion:hover { background: rgba(58,123,213,0.15); }
-  .suggestion img { width: 40px; height: 40px; border-radius: 8px; }
-  .suggestion span { font-weight: 600; font-size: 0.95rem; }
+  .suggestion:hover { background: #f8f9fa; }
+  .suggestion img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; }
+  .suggestion span { font-size: 0.95rem; font-weight: 600; }
 
   #guessBtn {
-    padding: 14px 28px;
-    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800;
-    background: linear-gradient(135deg, var(--blue), var(--blue2));
-    color: #fff; border: none; border-radius: 14px; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(58,123,213,0.35);
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 0 24px;
+    font-family: var(--nyt-font-sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--nyt-text-primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
     white-space: nowrap;
   }
-  #guessBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(58,123,213,0.5); }
-  #guessBtn:active { transform: translateY(0); }
+  #guessBtn:hover { opacity: 0.85; }
 
-  /* Column headers */
+  /* Board Area */
+  #board-container {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+
   #col-headers {
     display: none;
-    grid-template-columns: 100px repeat(8, 1fr);
-    gap: 8px;
-    max-width: 100%; margin: 20px auto 6px;
-    padding: 0 4px;
-  }
-  #col-headers .ch {
-    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: rgba(255,255,255,0.35);
-    text-align: center; padding: 0 4px;
+    grid-template-columns: 80px repeat(8, minmax(85px, 1fr));
+    gap: 6px;
+    min-width: 760px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--nyt-text-primary);
   }
 
-  /* Feedback rows */
-  #feedback { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .ch {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--nyt-text-secondary);
+    text-align: center;
+  }
+
+  #feedback {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 760px;
+  }
 
   .card-result {
     display: grid;
-    grid-template-columns: 100px repeat(8, 1fr);
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: rgba(10,20,50,0.7);
-    border: 1px solid rgba(255,255,255,0.06);
+    grid-template-columns: 80px repeat(8, minmax(85px, 1fr));
+    gap: 6px;
     align-items: center;
-    animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: flip 0.4s ease forwards;
   }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(-30px) scale(0.95); }
-    to { opacity: 1; transform: none; }
+
+  @keyframes flip {
+    0% { transform: rotateX(-90deg); opacity: 0; }
+    100% { transform: rotateX(0deg); opacity: 1; }
   }
+
   .card-result img {
-    width: 80px; height: 80px; border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    transition: transform 0.2s;
+    width: 80px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--nyt-border);
+    background: var(--nyt-card-bg);
   }
-  .card-result img:hover { transform: scale(1.1); }
 
   .hint {
-    font-weight: 700; text-align: center; border-radius: 10px;
-    padding: 8px 6px; font-size: 0.78rem;
-    min-height: 64px; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; gap: 4px;
-    transition: all 0.2s;
+    height: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    padding: 6px 4px;
+    text-align: center;
+    gap: 2px;
   }
-  .hint:hover { transform: scale(1.04); }
-  .hint .heading {
-    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em;
-    opacity: 0.7; font-weight: 800;
-  }
-  .hint .val { font-size: 0.85rem; }
 
-  .green {
-    background: linear-gradient(135deg, #16a34a, #22c55e);
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(34,197,94,0.3);
+  .hint .heading {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    opacity: 0.85;
   }
-  .red {
-    background: linear-gradient(135deg, #b91c1c, #ef4444);
-    color: #fff;
-    box-shadow: 0 2px 12px rgba(239,68,68,0.3);
+
+  .hint .val {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  /* Color Codes */
+  .green {
+    background-color: var(--nyt-correct);
+    color: var(--nyt-correct-text);
   }
   .yellow {
-    background: linear-gradient(135deg, #d97706, #fbbf24);
-    color: #000;
-    box-shadow: 0 2px 12px rgba(251,191,36,0.3);
+    background-color: var(--nyt-partial);
+    color: var(--nyt-partial-text);
+  }
+  .red {
+    background-color: var(--nyt-incorrect);
+    color: var(--nyt-incorrect-text);
   }
 
-  /* Win celebration */
+  /* Celebration Card */
   .celebration {
-    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.1));
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 20px; padding: 30px;
+    border: 2px solid var(--nyt-text-primary);
+    border-radius: 8px;
+    padding: 24px;
     text-align: center;
-    animation: celebPop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
-    box-shadow: 0 0 60px rgba(255,215,0,0.2);
-    margin-top: 20px;
+    background-color: var(--nyt-card-bg);
+    margin-bottom: 16px;
+    animation: fadeIn 0.3s ease;
   }
-  @keyframes celebPop { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:none} }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .celebration-stars { font-size: 1.5rem; margin-bottom: 8px; }
   .celebration h2 {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 1.8rem; color: var(--gold);
-    margin-bottom: 10px;
+    font-family: var(--nyt-font-serif);
+    font-size: 1.8rem;
+    margin-bottom: 6px;
   }
-  .celebration img { width: 100px; height: 100px; border-radius: 16px; margin: 14px 0; }
-  .celebration h3 { font-size: 1.3rem; margin-bottom: 6px; }
-  .celebration p { color: rgba(255,255,255,0.6); margin-bottom: 20px; }
-  .celebration-stars { font-size: 2rem; letter-spacing: 0.2em; margin: 10px 0; }
+  .celebration img { width: 80px; height: 80px; border-radius: 6px; margin: 12px 0; border: 1px solid var(--nyt-border); }
+  .celebration h3 { font-size: 1.1rem; margin-bottom: 4px; }
+  .celebration p { color: var(--nyt-text-secondary); margin-bottom: 16px; font-weight: 500; }
+
   .play-again {
-    padding: 12px 30px;
-    font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800;
-    background: linear-gradient(135deg, var(--gold), var(--gold2));
-    color: #000; border: none; border-radius: 14px; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(255,165,0,0.4);
-    transition: transform 0.2s;
+    padding: 12px 24px;
+    font-family: var(--nyt-font-sans);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--nyt-correct);
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s;
   }
-  .play-again:hover { transform: scale(1.05); }
+  .play-again:hover { opacity: 0.9; }
 
   /* Confetti */
   .confetti-piece {
     position: fixed; pointer-events: none; z-index: 999;
-    width: 10px; height: 10px; border-radius: 2px;
+    width: 8px; height: 8px; border-radius: 2px;
     animation: confettiFall linear forwards;
   }
   @keyframes confettiFall {
@@ -266,30 +344,30 @@
 </style>
 </head>
 <body>
-<div class="particles" id="particles"></div>
-<div class="content">
-  <nav>
-    <a class="nav-home" href="index.html">← Hub</a>
-    <div class="nav-title">Clashdle</div>
-    <button class="nav-pancake" id="pancakeToggle">
-      <img src="assets/pancakeicon.png" alt="🥞"> Pancake
-    </button>
-  </nav>
 
-  <main>
-    <div class="game-header">
-      <div class="guess-counter" id="guessCounter">Guesses: 0</div>
-      <div class="search-row">
-        <div class="search-wrap">
-          <input type="text" id="guess" placeholder="Search for a Clash Royale card…" autocomplete="off">
-          <div id="suggestions"></div>
-        </div>
-        <button id="guessBtn" onclick="checkGuess()">Guess ⚔️</button>
+<header>
+  <a class="nav-link" href="index.html">← Hub</a>
+  <h1>Clashdle</h1>
+  <button class="nav-pancake" id="pancakeToggle">
+    <img src="assets/pancakeicon.png" alt="🥞"> Pancake
+  </button>
+</header>
+
+<main>
+  <div class="game-header">
+    <div class="guess-counter" id="guessCounter">Guesses: 0</div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <input type="text" id="guess" placeholder="Search for a Clash Royale card…" autocomplete="off">
+        <div id="suggestions"></div>
       </div>
+      <button id="guessBtn" onclick="checkGuess()">Submit ⚔️</button>
     </div>
+  </div>
 
+  <div id="board-container">
     <div id="col-headers">
-      <div class="ch"></div>
+      <div class="ch">Card</div>
       <div class="ch">Elixir</div>
       <div class="ch">Rarity</div>
       <div class="ch">Type</div>
@@ -300,23 +378,11 @@
       <div class="ch">Hit Speed</div>
     </div>
     <div id="feedback"></div>
-  </main>
-</div>
+  </div>
+</main>
 
 <script src="js/cards-data.js"></script>
 <script>
-// Particles
-(function(){
-  const cont = document.getElementById('particles');
-  for(let i=0;i<20;i++){
-    const p = document.createElement('div');
-    p.className='particle';
-    const size = Math.random()*80+20;
-    p.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.15+0.05};animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*10}s;`;
-    cont.appendChild(p);
-  }
-})();
-
 let secretCard = cards[Math.floor(Math.random() * cards.length)];
 let guessCount = 0;
 
@@ -360,11 +426,16 @@ function isNumeric(n) { return !isNaN(parseFloat(n)) && isFinite(n); }
 function createHintBox(heading, value, secretValue) {
   const div = document.createElement('div');
   div.className = 'hint';
+  
   const h = document.createElement('div');
-  h.className = 'heading'; h.innerText = heading;
+  h.className = 'heading'; 
+  h.innerText = heading;
+  
   const valDiv = document.createElement('div');
   valDiv.className = 'val';
-  div.appendChild(h); div.appendChild(valDiv);
+  
+  div.appendChild(h); 
+  div.appendChild(valDiv);
 
   const isCorrect = String(value) === String(secretValue);
   let text = value ?? 'N/A';
@@ -372,7 +443,9 @@ function createHintBox(heading, value, secretValue) {
   if (isCorrect) {
     div.classList.add('green');
   } else {
-    div.classList.add('red');
+    // Partial (Yellow) state for close matches/direction, Gray for full wrong
+    div.classList.add('yellow');
+    
     if (heading === 'Rarity') {
       const gi = rarityOrder.indexOf(value), si = rarityOrder.indexOf(secretValue);
       text = `${value} ${gi < si ? '↑' : '↓'}`;
@@ -385,34 +458,43 @@ function createHintBox(heading, value, secretValue) {
       else if (isNumeric(value) && secretValue === 'Melee') text = `${value} ↓`;
     } else if (isNumeric(value) && isNumeric(secretValue)) {
       text = `${value} ${value < secretValue ? '↑' : '↓'}`;
+    } else {
+      div.classList.remove('yellow');
+      div.classList.add('red');
     }
   }
+  
   valDiv.innerText = text;
   return div;
 }
 
 function spawnConfetti() {
-  const colors = ['#FFD700','#FFA500','#3a7bd5','#22c55e','#ef4444','#a855f7'];
-  for(let i=0;i<80;i++){
-    const c=document.createElement('div');
-    c.className='confetti-piece';
-    c.style.cssText=`left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};
-      animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*0.5}s;
-      transform:rotate(${Math.random()*360}deg);border-radius:${Math.random()>0.5?'50%':'2px'};`;
+  const colors = ['#6aaa64','#c9b458','#787c7e','#121212'];
+  for(let i=0; i<60; i++){
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${Math.random()*2+1.5}s;animation-delay:${Math.random()*0.3}s;
+      transform:rotate(${Math.random()*360}deg);`;
     document.body.appendChild(c);
-    setTimeout(()=>c.remove(), 4000);
+    setTimeout(() => c.remove(), 4000);
   }
 }
 
 function checkGuess() {
   const guess = input.value.trim();
   const card = cards.find(c => c.name.toLowerCase() === guess.toLowerCase());
-  if (!card) { input.style.borderColor='#ef4444'; setTimeout(()=>input.style.borderColor='',600); return; }
+  if (!card) { 
+    input.style.borderColor = '#e10600'; 
+    setTimeout(() => input.style.borderColor = '', 600); 
+    return; 
+  }
 
   guessCount++;
   guessCounter.innerText = `Guesses: ${guessCount}`;
   guessCounter.classList.add('bump');
-  setTimeout(()=>guessCounter.classList.remove('bump'),400);
+  setTimeout(() => guessCounter.classList.remove('bump'), 300);
+  
   colHeaders.style.display = 'grid';
 
   if (card.name === secretCard.name) {
@@ -421,7 +503,7 @@ function checkGuess() {
     celeb.className = 'celebration';
     celeb.innerHTML = `
       <div class="celebration-stars">⭐ ⭐ ⭐</div>
-      <h2>Correct!</h2>
+      <h2>Splendid!</h2>
       <img src="${secretCard.icon}" onerror="this.style.opacity=0.3">
       <h3>${secretCard.name}</h3>
       <p>Solved in <strong>${guessCount}</strong> guess${guessCount===1?'':'es'}</p>
